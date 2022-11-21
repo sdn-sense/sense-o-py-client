@@ -41,6 +41,8 @@ if __name__ == "__main__":
                         help="discover information via model query")
     parser.add_argument("--intent", action="append",
                         help="intent UUID parameter")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="verbose mode providing extra output")
 
     args = parser.parse_args()
 
@@ -89,7 +91,6 @@ if __name__ == "__main__":
         if args.file:
             workflowApi = WorkflowCombinedApi()
             if not os.path.isfile(args.file[0]):
-                workflowApi.instance_delete()
                 raise Exception('request file not found: %s' % args.file[0])
             intent_file = open(args.file[0])
             intent = json.load(intent_file)
@@ -106,7 +107,16 @@ if __name__ == "__main__":
                 except ValueError:
                     workflowApi.instance_delete()
                     raise
+            if not args.verbose and '"model":' in response:
+                res_dict = json.loads(response)
+                if 'model' in res_dict:
+                    res_dict.pop('model')
+                if 'queries' in res_dict:
+                    res_dict.pop('queries')
+                response = json.dumps(res_dict)
             print(f"computed service instance: {response}")
+
+
         elif args.uuid:
             # create by straight profile
             intent = {'service_profile_uuid': args.uuid[0]}
