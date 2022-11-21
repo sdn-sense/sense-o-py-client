@@ -20,6 +20,7 @@ class WorkflowCombinedApi(object):
     Do not edit the class manually.
     Ref: https://github.com/swagger-api/swagger-codegen
     """
+
     def __init__(self, req_wrapper=None):
         if req_wrapper is None:
             self.client = RequestWrapper()
@@ -109,7 +110,7 @@ class WorkflowCombinedApi(object):
         """
         if self.si_uuid:
             kwargs['si_uuid'] = self.si_uuid
-        if not kwargs['si_uuid'] :
+        if not kwargs['si_uuid']:
             raise ValueError("Missing the required parameter `si_uuid`")
 
         if action not in self._allowed_actions:
@@ -118,10 +119,10 @@ class WorkflowCombinedApi(object):
 
         if kwargs.get('async_req'):
             return self.instance_si_uuid_action_put_with_http_info(
-                 action, **kwargs)  # noqa: E501
+                action, **kwargs)  # noqa: E501
         else:
             (data) = self.instance_si_uuid_action_put_with_http_info(
-                 action, **kwargs)  # noqa: E501
+                action, **kwargs)  # noqa: E501
             return data
 
     def instance_si_uuid_action_put_with_http_info(self, action,
@@ -198,7 +199,7 @@ class WorkflowCombinedApi(object):
         """
         if self.si_uuid:
             kwargs['si_uuid'] = self.si_uuid
-        if not kwargs['si_uuid'] :
+        if not kwargs['si_uuid']:
             raise ValueError("Missing the required parameter `si_uuid`")
 
         kwargs['_return_http_data_only'] = True
@@ -266,7 +267,7 @@ class WorkflowCombinedApi(object):
         """
         if self.si_uuid:
             kwargs['si_uuid'] = self.si_uuid
-        if not kwargs['si_uuid'] :
+        if not kwargs['si_uuid']:
             raise ValueError("Missing the required parameter `si_uuid`")
 
         kwargs['_return_http_data_only'] = True
@@ -354,9 +355,9 @@ class WorkflowCombinedApi(object):
         else:
             (data) = self.instance_si_uuid_status_get_with_http_info(
                 **kwargs)  # noqa: E501
-            return data
+            return data + " [uuid:" + kwargs.get('si_uuid') + "]"
 
-    def instance_si_uuid_status_get_with_http_info(self,  **kwargs):  # noqa: E501
+    def instance_si_uuid_status_get_with_http_info(self, **kwargs):  # noqa: E501
         """Get instance status  # noqa: E501
         Retrieves the full instance status.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
@@ -391,7 +392,6 @@ class WorkflowCombinedApi(object):
 
         return self.client.request('GET', f'/instance/{kwargs.get("si_uuid")}/status')
 
-
     def instance_get_intents(self, **kwargs):  # noqa: E501
         """Retrieve intents by service instance  # noqa: E501
 
@@ -405,7 +405,7 @@ class WorkflowCombinedApi(object):
         """
         if self.si_uuid:
             kwargs['si_uuid'] = self.si_uuid
-        if not kwargs['si_uuid'] :
+        if not kwargs['si_uuid']:
             raise ValueError("Missing the required parameter `si_uuid`")
 
         kwargs['_return_http_data_only'] = True
