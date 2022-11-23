@@ -355,7 +355,7 @@ class WorkflowCombinedApi(object):
         else:
             (data) = self.instance_si_uuid_status_get_with_http_info(
                 **kwargs)  # noqa: E501
-            return data + " [uuid:" + kwargs.get('si_uuid') + "]"
+            return data
 
     def instance_si_uuid_status_get_with_http_info(self, **kwargs):  # noqa: E501
         """Get instance status  # noqa: E501
