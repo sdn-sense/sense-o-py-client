@@ -5,21 +5,23 @@
     "type": "Multi-Path P2P VLAN",
     "connections": [
       {
-        "bandwidth": {
-          "qos_class": "guaranteedCapped",
-          "capacity": "1000"
-        },
         "name": "Connection 1",
         "terminals": [
           {
+            "uri": "urn:ogf:network:es.net:2013::sunn-cr6:1_1_c2_1:+",
             "vlan_tag": "any",
-            "uri": "urn:ogf:network:es.net:2013::sunn-cr55:1_1_c13_1:+"
+            "assign_ip": false
           },
           {
-            "vlan_tag": "any",
-            "uri": "urn:ogf:network:es.net:2013::wash-cr5:6_1_1:+"
+            "uri": "urn:ogf:network:es.net:2013::wash-cr6:1_1_c6_1:+",
+            "vlan_tag": "3600-3619",
+            "assign_ip": false
           }
-        ]
+        ],
+        "bandwidth": {
+          "qos_class": "guaranteedCapped",
+          "capacity": "1000"
+        }
       }
     ]
   }

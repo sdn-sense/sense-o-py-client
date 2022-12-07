@@ -115,8 +115,6 @@ if __name__ == "__main__":
                     res_dict.pop('queries')
                 response = json.dumps(res_dict)
             print(f"computed service instance: {response}")
-
-
         elif args.uuid:
             # create by straight profile
             intent = {'service_profile_uuid': args.uuid[0]}
@@ -214,6 +212,10 @@ if __name__ == "__main__":
             profileApi = ProfileApi()
             profile = profileApi.profile_describe(args.uuid[0])
             print(json.dumps(json.loads(profile), indent=2))
+        elif args.name:
+            profileApi = ProfileApi()
+            profile_id = profileApi.profile_describe(args.name[0], force='true', fetch='false')
+            print(profile_id)
         else:
             raise ValueError("Missing the required parameter `uuid` ")
     elif args.status:

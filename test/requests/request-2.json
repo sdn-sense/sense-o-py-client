@@ -1,26 +1,29 @@
 {
-  "service": "dnc",
-  "alias": "SENSE-API-2.0-Alpha-T1",
   "data": {
-    "type": "Multi-Path P2P VLAN",
-    "connections": [
+    "parent": "urn:ogf:network:aws.amazon.com:aws-cloud",
+    "cidr": "10.0.0.0/16",
+    "subnets": [
       {
-        "bandwidth": {
-          "qos_class": "guaranteedCapped",
-          "capacity": "1000"
-        },
-        "name": "Connection 1",
-        "terminals": [
+        "vpn_route_propagation": false,
+        "name": "Subnet 1",
+        "cidr": "10.0.0.0/24",
+        "vms": [
           {
-            "vlan_tag": "any",
-            "uri": "urn:ogf:network:maxgigapop.net:2013:180-134.research.maxgigapop.net"
-          },
-          {
-            "vlan_tag": "any",
-            "uri": "urn:ogf:network:maxgigapop.net:2013:s0:1_1:wash-cr5"
+            "interfaces": [
+              {
+                "public": true,
+                "type": "Ethernet"
+              }
+            ],
+            "name": "VM 1"
           }
-        ]
+        ],
+        "internet_routable": true
       }
     ]
-  }
+  },
+  "service": "vcn",
+  "options": [
+    "aws-form"
+  ]
 }

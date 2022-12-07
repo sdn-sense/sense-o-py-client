@@ -78,7 +78,7 @@ class ProfileApi(object):
 
         return self.client.request('GET', f'/profile')
 
-    def profile_describe(self, uuid, **kwargs):  # noqa: E501
+    def profile_describe(self, desc, **kwargs):  # noqa: E501
         """Get single profile  # noqa: E501
 
         Retrieves the specified profile.  # noqa: E501
@@ -91,20 +91,20 @@ class ProfileApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
-            return self.profile_uuid_get_with_http_info(uuid,
+            return self.profile_search_get_with_http_info(search,
                                                         **kwargs)  # noqa: E501
         else:
-            (data) = self.profile_uuid_get_with_http_info(
-                uuid, **kwargs)  # noqa: E501
+            (data) = self.profile_search_get_with_http_info(
+                desc, **kwargs)  # noqa: E501
             return data
 
-    def profile_uuid_get_with_http_info(self, uuid, **kwargs):  # noqa: E501
-        """Get single profile  # noqa: E501
+    def profile_search_get_with_http_info(self, search, **kwargs):  # noqa: E501
+        """Get single profile by name or uuid # noqa: E501
 
         Retrieves the specified profile.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.profile_uuid_get_with_http_info(uuid, async_req=True)
+        >>> thread = api.profile_search_get_with_http_info(uuid, async_req=True)
         >>> result = thread.get()
 
         :param async_req bool
@@ -114,7 +114,7 @@ class ProfileApi(object):
                  returns the request thread.
         """
 
-        all_params = ['uuid']  # noqa: E501
+        all_params = ['search', 'force', 'fetch']  # noqa: E501
         all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
@@ -128,12 +128,19 @@ class ProfileApi(object):
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'uuid' is set
-        if ('uuid' not in params or params['uuid'] is None):
+        if ('search' not in params or params['search'] is None):
             raise ValueError(
                 "Missing the required parameter `uuid` when calling `profile_uuid_get`"
             )  # noqa: E501
 
-        return self.client.request('GET', f'/profile/' + uuid)
+        query_params = []
+        if 'force' in params:
+            query_params.append(('force', params['force']))
+        if 'fetch' in params:
+            query_params.append(('fetch', params['fetch']))
+
+        return self.client.request('GET', f'/profile/' + search,
+                                   query_params=query_params)
 
     def profile_create(self, body, **kwargs):  # noqa: E501
         """Create a profile  # noqa: E501
