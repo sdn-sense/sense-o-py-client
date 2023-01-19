@@ -31,6 +31,8 @@ if __name__ == "__main__":
                             help="get service instance status (requires -u)")
     operations.add_argument("-p", "--profile", action="store_true",
                             help="describe a service profile (requires -u)")
+    operations.add_argument("-m", "--manifest", action="store_true",
+                            help="create manfiest with template (requires -f -u)")
     parser.add_argument("-f", "--file", action="append",
                         help="service intent request file")
     parser.add_argument("-u", "--uuid", action="append",
@@ -293,3 +295,16 @@ if __name__ == "__main__":
             print(str(response))
         else:
             raise ValueError(f"Invalid discover query option `{args.discover}`")
+    elif args.manifest:
+        if args.uuid and args.file:
+            workflowApi = WorkflowCombinedApi()
+            if not os.path.isfile(args.file[0]):
+                raise Exception('template file not found: %s' % args.file[0])
+            template_file = open(args.file[0])
+            teamplate = json.load(template_file)
+            template_file.close()
+            workflowApi.si_uuid = args.uuid[0]
+            response = workflowApi.manifest_create(json.dumps(teamplate))
+            print(str(response))
+        else:
+            raise ValueError(f"Invalid manifest options: require both -f josn_template and -u uuid")
