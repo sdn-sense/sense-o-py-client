@@ -161,7 +161,10 @@ if __name__ == "__main__":
             elif 'COMPILED' not in status:
                 raise ValueError(f"cannot provision an instance in '{status}' status...")
             else:
-                workflowApi.instance_operate('provision', si_uuid=args.uuid[0], sync='true')
+                if args.intent:
+                    workflowApi.instance_operate('provision', si_uuid=args.uuid[0], sync='true', intent=args.intent[0])
+                else:
+                    workflowApi.instance_operate('provision', si_uuid=args.uuid[0], sync='true')
             status = workflowApi.instance_get_status(si_uuid=args.uuid[0])
             print(f'provision status={status}')
     elif args.reprovision:
