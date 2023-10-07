@@ -334,6 +334,94 @@ class WorkflowCombinedApi(object):
                                    '/instance/' + kwargs['si_uuid'],
                                    body_params=body)
 
+
+    def instance_modify(self, intent, **kwargs):  # noqa: E501
+        """Create new service instance and/or add new intent  # noqa: E501
+
+        Creates a new service instance with the given UUID and intent specification or add new intent to existing service instance  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.instance_create(body, si_uuid, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param ServiceIntent body: Service instance creation request object. (required)
+        :param str si_uuid: Service instance UUID. (required)
+        :return: ServiceIntentResponse
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        if self.si_uuid:
+            kwargs['si_uuid'] = self.si_uuid
+        if not kwargs['si_uuid']:
+            raise ValueError("Missing the required parameter `si_uuid`")
+
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.instance_modify_si_uuid_post_with_http_info(
+                intent, **kwargs)  # noqa: E501
+        else:
+            (data) = self.instance_modify_si_uuid_post_with_http_info(
+                intent, **kwargs)  # noqa: E501
+            return data
+
+    def instance_modify_si_uuid_post_with_http_info(self, body,
+                                             **kwargs):  # noqa: E501
+        """Create new service instance and/or add new intent  # noqa: E501
+
+        Creates a new service instance with the given UUID and intent specification or add new intent to existing service instance  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.instance_modify_si_uuid_post_with_http_info(body, si_uuid, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param ServiceIntent body: Service instance creation request object. (required)
+        :param str si_uuid: Service instance UUID. (required)
+        :return: ServiceIntentResponse
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        all_params = ['body', 'si_uuid', 'sync']  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in six.iteritems(params['kwargs']):
+            if key not in all_params:
+                raise TypeError("Got an unexpected keyword argument '%s'"
+                                " to method instance_modify_si_uuid_post" % key)
+            params[key] = val
+        del params['kwargs']
+        # verify the required parameter 'body' is set
+        if ('body' not in params or params['body'] is None):
+            raise ValueError(
+                "Missing the required parameter `body` when calling `instance_modify_si_uuid_post`"
+            )  # noqa: E501
+        # verify the required parameter 'si_uuid' is set
+        if ('si_uuid' not in params or params['si_uuid'] is None):
+            raise ValueError(
+                "Missing the required parameter `si_uuid` when calling `instance_modify_si_uuid_post`"
+            )  # noqa: E501
+
+        path_params = {}
+        if 'si_uuid' in params:
+            path_params['siUUID'] = params['si_uuid']  # noqa: E501
+
+        query_params = []
+        if 'sync' in params:
+            query_params.append(('sync', params['sync']))
+
+        # Authentication setting
+        auth_settings = ['oAuth2Keycloak']  # noqa: E501
+        return self.client.request('POST',
+                                   '/instance/' + kwargs['si_uuid'] + '/modify',
+                                   body_params=body, query_params=query_params)
+
+
     def instance_get_status(self, **kwargs):  # noqa: E501
         """Get instance status  # noqa: E501
         Retrieves the full instance status.  # noqa: E501
@@ -620,7 +708,7 @@ class WorkflowCombinedApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method instance_si_uuid_modify_post_with_http_info" %
+                    " to method instance_si_uuid_post_with_http_info" %
                     key)
             params[key] = val
         del params['kwargs']

@@ -19,6 +19,8 @@ if __name__ == "__main__":
                             help="cancel (and not delete) an existing service instance (requires -u)")
     operations.add_argument("-co", "--compute", action="store_true",
                             help="compute (compile only) a service intent (requires one of optional -f, optional -u)")
+    operations.add_argument("-mo", "--modify", action="store_true",
+                            help="modify and an already provisioned service instance (requires -u)")
     operations.add_argument("-pr", "--provision", action="store_true",
                             help="provision an already computed service instance (requires -u)")
     operations.add_argument("-r", "--reprovision", action="store_true",
@@ -130,6 +132,23 @@ if __name__ == "__main__":
                 workflowApi.instance_delete()
                 raise
             print(f"computed service instance: {response}")
+    elif args.modify:
+        if not args.file:
+            raise ValueError("Missing the request file `-f mod_intent_json_file`")
+        workflowApi = WorkflowCombinedApi()
+        if not os.path.isfile(args.file[0]):
+            raise Exception('request file not found: %s' % args.file[0])
+        intent_file = open(args.file[0])
+        intent = json.load(intent_file)
+        intent_file.close()
+        if not args.uuid:
+            raise ValueError("Missing the instance uuid `-u uuid`")
+        workflowApi.si_uuid = args.uuid[0]
+        try:
+            response = workflowApi.instance_modify(json.dumps(intent), sync='true')
+        except ValueError:
+            raise
+        print(f"modified service instance: {response}")
     elif args.cancel:
         if args.uuid:
             workflowApi = WorkflowCombinedApi()
@@ -156,7 +175,7 @@ if __name__ == "__main__":
             status = workflowApi.instance_get_status(si_uuid=args.uuid[0])
             if 'error' in status:
                 raise ValueError(status)
-            if 'CREATE' not in status:
+            if 'CREATE' not in status and 'REINSTATE' not in status:
                 raise ValueError(f"cannot provision an instance in '{status}' status...")
             elif 'COMPILED' not in status:
                 raise ValueError(f"cannot provision an instance in '{status}' status...")
