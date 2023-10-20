@@ -50,8 +50,6 @@ class AddressApi(object):
     def allocations_get_with_http_info(self, pool: str,
                                        **kwargs):  # noqa: E501
         """Retrieve allocations by pool and scope  # noqa: E501
-
-        Queries all allocations belonging to given pool and scope.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.allocations_get_with_http_info(pool, async_req=True)
@@ -78,7 +76,7 @@ class AddressApi(object):
             params[key] = val
         del params['kwargs']
         # verify the required parameter 'si_uuid' is set
-        if ('pool' not in params or params['pool'] is None):
+        if 'pool' not in params or params['pool'] is None:
             raise ValueError(
                 "Missing the required parameter `pool` when calling `allocations_get_with_http_info`"
             )  # noqa: E501
@@ -95,10 +93,23 @@ class AddressApi(object):
     def allocate_ipv4_address_subnet(self, pool: str, alloc_name: str, batch: str, netmask: str, scope='default'):
         return self.allocate_address(pool, 'IPv4', alloc_name, batch=batch, netmask=netmask, scope=scope)
 
+    def allocate_ipv6_address(self, pool: str, alloc_name: str, batch: str, scope='default'):
+        return self.allocate_address(pool, 'IPv6', alloc_name, batch=batch, scope=scope)
+
+    def allocate_ipv6_subnet(self, pool: str, alloc_name: str, netmask: str, scope='default'):
+        return self.allocate_address(pool, 'IPv6', alloc_name, batch='subnet', netmask=netmask, scope=scope)
+
+    def allocate_ipv6_address_subnet(self, pool: str, alloc_name: str, batch: str, netmask: str, scope='default'):
+        return self.allocate_address(pool, 'IPv6', alloc_name, batch=batch, netmask=netmask, scope=scope)
+
+    def allocate_mac_address(self, pool: str, alloc_name: str, batch: str, scope='default'):
+        return self.allocate_address(pool, 'MAC', alloc_name, batch=batch, scope=scope)
+
+    def allocate_id_address(self, pool: str, alloc_name: str, batch: str, scope='default'):
+        return self.allocate_address(pool, 'ID', alloc_name, batch=batch, scope=scope)
+
     def allocate_address(self, pool: str, addr_type: str, alloc_name: str, **kwargs):  # noqa: E501
         """allocate address by pool, scope and name  # noqa: E501
-
-        Queries all service intents belonging to given instance UUID.  # noqa: E501
         This method makes a synchronous HTTP request by default.
         :param async_req bool
         :param str pool: Pool Name. (required)
@@ -110,7 +121,7 @@ class AddressApi(object):
 
         kwargs['_return_http_data_only'] = True
 
-        if addr_type.lower() not in ['ipv4', 'ipv6', 'mac', 'id']:
+        if addr_type not in ['IPv4', 'IPv6', 'MAC', 'ID']:
             raise ValueError(
                 "Parameter 'type' must of one of ['ipv4', 'ipv6', 'mac', 'id']"
             )  # noqa: E501
@@ -122,7 +133,11 @@ class AddressApi(object):
             batch = 1
         else:
             batch = kwargs['batch']
-
+            if isinstance(batch, str) and not batch.isnumeric():
+                raise ValueError(
+                    "Parameter `batch` must be either numeric or 'subnet'"
+                )  # noqa: E501
+            batch = int(batch)
         allocRequest = {'type': addr_type, 'name': alloc_name}
 
         allocParams = {'scope': scope, 'batch': batch}
@@ -151,7 +166,6 @@ class AddressApi(object):
                                      **kwargs):  # noqa: E501
         """allocate address by pool, scope and name  # noqa: E501
 
-        Queries all allocations belonging to given pool and scope.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.allocate_post_with_http_info(pool, async_req=True)
@@ -184,3 +198,144 @@ class AddressApi(object):
         return self.client.request('POST',
                                    '/address/allocate/' + pool,
                                    body_params=body)
+
+    def free_address(self, pool: str, **kwargs):  # noqa: E501
+        """free address by pool by scope and optionally with address or name  # noqa: E501
+
+        This method makes a synchronous HTTP request by default.
+        :param async_req bool
+        :param str pool: Pool Name. (required)
+        :return: allocation result
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        kwargs['_return_http_data_only'] = True
+
+        if 'scope' not in kwargs:
+            kwargs['scope'] = 'default'
+
+        if kwargs.get('async_req'):
+            return self.free_delete_with_http_info(pool, **kwargs)  # noqa: E501
+        else:
+            (data) = self.free_delete_with_http_info(pool, **kwargs)  # noqa: E501
+            return data
+
+    def free_delete_with_http_info(self, pool: str,
+                                   **kwargs):  # noqa: E501
+        """free address by pool by scope and optionally with address or name  # noqa: E501
+
+        Queries all allocations belonging to given pool and scope.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.free_delete_with_http_info(pool, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str pool: Pool Name (required)
+        :return: list[Allocations]
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        all_params = ['pool', 'scope', 'name', 'address']  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in six.iteritems(params['kwargs']):
+            if key not in all_params:
+                raise TypeError("Got an unexpected keyword argument '%s'"
+                                " to method intent_instance_si_uuid_get" % key)
+            params[key] = val
+        del params['kwargs']
+
+        if 'pool' not in params or params['pool'] is None:
+            raise ValueError(
+                "Missing the required parameter `pool` when calling `allocations_get_with_http_info`"
+            )  # noqa: E501
+        if 'scope' not in params:
+            params['scope'] = 'default'
+
+        if 'address' not in params and 'name' not in params:
+            return self.client.request('DELETE',
+                                       '/address/allocate/' + pool + '/' + params['scope'])
+        elif 'address' in params:
+            address = params['address'].replace('/', '%2F')
+            return self.client.request('DELETE',
+                                       '/address/allocate/' + pool + '/' + address + '/' + params['scope'])
+        else:
+            return self.client.request('DELETE',
+                                       '/address/allocate/' + pool + '/name/' + params['name'] + '/' + params['scope'])
+
+    def affiliate_address(self, pool: str, uri: str, **kwargs):  # noqa: E501
+        """affilicate address with resource uri by address or name  # noqa: E501
+        This method makes a synchronous HTTP request by default.
+        :param async_req bool
+        :param str pool: Pool Name. (required)
+        :return: allocation result
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        kwargs['_return_http_data_only'] = True
+
+        if 'scope' not in kwargs:
+            kwargs['scope'] = 'default'
+
+        if kwargs.get('async_req'):
+            return self.affiliate_put_with_http_info(pool, uri, **kwargs)  # noqa: E501
+        else:
+            (data) = self.affiliate_put_with_http_info(pool, uri, **kwargs)  # noqa: E501
+            return data
+
+    def affiliate_put_with_http_info(self, pool: str, uri: str,
+                                     **kwargs):  # noqa: E501
+        """affilicate address with resource uri by address or name  # noqa: E501
+        Queries all allocations belonging to given pool and scope.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.affiliate_put_with_http_info(pool, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str pool: Pool Name (required)
+        :param str uri: Affiliated resource URI (required)
+        :return: list[Allocations]
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        all_params = ['pool', 'scope', 'name', 'address', 'uri']  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in six.iteritems(params['kwargs']):
+            if key not in all_params:
+                raise TypeError("Got an unexpected keyword argument '%s'"
+                                " to method intent_instance_si_uuid_get" % key)
+            params[key] = val
+        del params['kwargs']
+
+        if 'pool' not in params or params['pool'] is None:
+            raise ValueError(
+                "Missing the required parameter `pool` when calling `allocations_get_with_http_info`"
+            )  # noqa: E501
+        if 'scope' not in params:
+            params['scope'] = 'default'
+
+        if 'address' not in params and 'name' not in params:
+            raise TypeError("affiliate_address call needs either a 'name' or 'address' parameter")
+        elif 'address' in params:
+            address = params['address'].replace('/', '%2F')
+            return self.client.request('PUT',
+                                       '/address/affiliate/' + pool + '/' + address + '/' + params['scope'] + '/' + uri)
+        else:
+            return self.client.request('PUT',
+                                       '/address/affiliate/' + pool + '/name/' + params['name'] + '/' + params[
+                                           'scope'] + '/' + uri)

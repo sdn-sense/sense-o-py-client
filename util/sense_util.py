@@ -5,6 +5,7 @@ import sys
 import os
 import json
 
+from sense.client.address_api import AddressApi
 from sense.client.workflow_combined_api import WorkflowCombinedApi
 from sense.client.profile_api import ProfileApi
 from sense.client.discover_api import DiscoverApi
@@ -43,6 +44,8 @@ if __name__ == "__main__":
                         help="service instance alias name")
     parser.add_argument("--discover", action="append",
                         help="discover information via model query")
+    parser.add_argument("--address", action="append",
+                        help="address (ipv4, ipv6, mac, id) allocate, free and affiliate")
     parser.add_argument("--intent", action="append",
                         help="intent UUID parameter")
     parser.add_argument("-v", "--verbose", action="store_true",
@@ -330,3 +333,63 @@ if __name__ == "__main__":
             print(str(response))
         else:
             raise ValueError(f"Invalid manifest options: require both -f josn_template and -u uuid")
+    elif args.address:
+        addressApi = AddressApi()
+        address_opts = args.address[0].split(",")
+        params = {}
+        if address_opts[0] == 'allocate':
+            for i in range(1, len(address_opts)):
+                kv = address_opts[i].split('=')
+                if len(kv) != 2:
+                    raise ValueError(f"Invalid address allocate option field:`{address_opts[i]}`")
+                params[kv[0]] = kv[1]
+            if 'pool' not in params:
+                raise ValueError(f"Missing a 'pool' paramter in the allocate option")
+            if 'type' not in params:
+                raise ValueError(f"Missing a 'type' paramter in the allocate option")
+            if 'name' not in params:
+                raise ValueError(f"Missing a 'name' paramter in the allocate option")
+            pool = params['pool']
+            del params['pool']
+            atype = params['type']
+            del params['type']
+            name = params['name']
+            del params['name']
+            response = addressApi.allocate_address(pool, atype, name, **params)
+            if len(response) == 0 or "ERROR" in response:
+                raise ValueError(f"Address allocate failed with option `{args.address}`")
+            print(response)
+        elif address_opts[0] == 'free':
+            for i in range(1, len(address_opts)):
+                kv = address_opts[i].split('=')
+                if len(kv) != 2:
+                    raise ValueError(f"Invalid address free option field:`{address_opts[i]}`")
+                params[kv[0]] = kv[1]
+            if 'pool' not in params:
+                raise ValueError(f"Missing a 'pool' paramter in the free option")
+            pool = params['pool']
+            del params['pool']
+            response = addressApi.free_address(pool, **params)
+            if "ERROR" in response:
+                raise ValueError(f"Address free failed with option `{args.address}`")
+            print(response)
+        elif address_opts[0] == 'affiliate':
+            for i in range(1, len(address_opts)):
+                kv = address_opts[i].split('=')
+                if len(kv) != 2:
+                    raise ValueError(f"Invalid address affiliate option field:`{address_opts[i]}`")
+                params[kv[0]] = kv[1]
+            if 'pool' not in params:
+                raise ValueError(f"Missing a 'pool' paramter in the affiliate option")
+            if 'uri' not in params:
+                raise ValueError(f"Missing a 'uri' paramter in the affiliate option")
+            pool = params['pool']
+            del params['pool']
+            uri = params['uri']
+            del params['uri']
+            response = addressApi.affiliate_address(pool, uri, **params)
+            if "ERROR" in response:
+                raise ValueError(f"Address affiliate failed with option `{args.address}`")
+            print(response)
+        else:
+            raise ValueError(f"Invalid address allocate/free/affiliate options")

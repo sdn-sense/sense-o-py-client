@@ -21,7 +21,7 @@ class TestAddressApi(unittest.TestCase):
     def setUp(self) -> None:
         self.client = AddressApi()
         self.pool = 'IPv6-Pool-T1'
-        self.scope = 'TestScope2'
+        self.scope = 'TestScope1'
         # TODO: create test pool update setUp
 
     def tearDown(self) -> None:
@@ -38,7 +38,7 @@ class TestAddressApi(unittest.TestCase):
         res = self.client.get_allocations(self.pool, scope=self.scope)
         print(res)
 
-    def test_allocate_ipv4(self):
+    def test_allocate_ipv6(self):
         # - TESTING: POST /address/allocate/{pool_name}
         res = self.client.allocate_ipv4_address(self.pool, 'alloc1', batch=3, scope=self.scope)
         print(res)
@@ -46,3 +46,19 @@ class TestAddressApi(unittest.TestCase):
         print(res)
         res = self.client.allocate_ipv4_subnet(self.pool, 'alloc3', netmask='/64', scope=self.scope)
         print(res)
+
+
+    def test_free_ipv6(self):
+        # - TESTING: DELETE /address/allocate/{pool_name}/...
+        #res = self.client.free_address(self.pool, name='alloc2', scope=self.scope)
+        res = self.client.free_address(self.pool, scope=self.scope, address='2001:48d0:3001:8000::/50')
+        print(res)
+
+
+    def test_affiliate_ipv6(self):
+        # - TESTING: POST /address/affiliate/{pool_name}/...
+        # res = self.client.affiliate_address(self.pool, 'uri:test:test', scope=self.scope, address='2001:48d0:3001::/50')
+        res = self.client.affiliate_address(self.pool, 'uri:test:test2', scope=self.scope, name='2001:48d0:3001::/50')
+        print(res)
+
+
