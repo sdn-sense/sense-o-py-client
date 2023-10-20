@@ -20,7 +20,7 @@ if __name__ == "__main__":
     operations.add_argument("-co", "--compute", action="store_true",
                             help="compute (compile only) a service intent (requires one of optional -f, optional -u)")
     operations.add_argument("-mo", "--modify", action="store_true",
-                            help="modify and an already provisioned service instance (requires -u)")
+                            help="modify and an already provisioned service instance (requires -f -u)")
     operations.add_argument("-pr", "--provision", action="store_true",
                             help="provision an already computed service instance (requires -u)")
     operations.add_argument("-r", "--reprovision", action="store_true",
