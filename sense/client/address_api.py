@@ -133,11 +133,12 @@ class AddressApi(object):
             batch = 1
         else:
             batch = kwargs['batch']
-            if not batch.isnumeric() and batch != 'subnet':
+            if batch.isnumeric():
+                batch = int(batch)
+            elif batch != 'subnet':
                 raise ValueError(
                     "Parameter `batch` must be either numeric or 'subnet'"
                 )  # noqa: E501
-            batch = int(batch)
         allocRequest = {'type': addr_type, 'name': alloc_name}
 
         allocParams = {'scope': scope, 'batch': batch}
