@@ -48,6 +48,12 @@ if __name__ == "__main__":
                         help="address (ipv4, ipv6, mac, id) allocate, free and affiliate")
     parser.add_argument("--intent", action="append",
                         help="intent UUID parameter")
+    parser.add_argument("-ph", "--phase", action="store_true",
+                        help="Select phase status for status call")
+    parser.add_argument("-wf", "--workflow", action="store_true",
+                        help="Select workflow status for status call")
+    parser.add_argument("-cf", "--configuration", action="store_true",
+                        help="Select configuration status for status call")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="verbose mode providing extra output")
 
@@ -162,7 +168,7 @@ if __name__ == "__main__":
                 raise ValueError(f"cannot cancel an instance in '{status}' status...")
             elif 'READY' not in status:
                 workflowApi.instance_operate('cancel', si_uuid=args.uuid[0], sync='true', force='true')
-            else:     
+            else:
                 workflowApi.instance_operate('cancel', si_uuid=args.uuid[0], sync='true')
             status = workflowApi.instance_get_status(si_uuid=args.uuid[0])
             print(f'cancel status={status}')
@@ -199,12 +205,14 @@ if __name__ == "__main__":
                 raise ValueError(f"cannot reprovision an instance in '{status}' status...")
             elif 'READY' not in status:
                 if args.intent:
-                    workflowApi.instance_operate('reprovision', si_uuid=args.uuid[0], sync='true', force='true', intent=args.intent[0])
+                    workflowApi.instance_operate('reprovision', si_uuid=args.uuid[0], sync='true', force='true',
+                                                 intent=args.intent[0])
                 else:
                     workflowApi.instance_operate('reprovision', si_uuid=args.uuid[0], sync='true', force='true')
             else:
                 if args.intent:
-                    workflowApi.instance_operate('reprovision', si_uuid=args.uuid[0], sync='true', intent=args.intent[0])
+                    workflowApi.instance_operate('reprovision', si_uuid=args.uuid[0], sync='true',
+                                                 intent=args.intent[0])
                 else:
                     workflowApi.instance_operate('reprovision', si_uuid=args.uuid[0], sync='true')
             status = workflowApi.instance_get_status(si_uuid=args.uuid[0])
@@ -248,7 +256,17 @@ if __name__ == "__main__":
     elif args.status:
         if args.uuid:
             workflowApi = WorkflowCombinedApi()
-            status = workflowApi.instance_get_status(si_uuid=args.uuid[0])
+
+            if args.phase:
+                specStatus = "phase"
+            elif args.workflow:
+                specStatus = "workflow"
+            elif args.configuration:
+                specStatus = "configuration"
+            else:
+                specStatus = None
+
+            status = workflowApi.instance_get_status(si_uuid=args.uuid[0], status=specStatus, verbose=args.verbose)
             print(status)
         else:
             raise ValueError("Missing the required parameter `uuid` ")

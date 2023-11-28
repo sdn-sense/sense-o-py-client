@@ -334,7 +334,6 @@ class WorkflowCombinedApi(object):
                                    '/instance/' + kwargs['si_uuid'],
                                    body_params=body)
 
-
     def instance_modify(self, intent, **kwargs):  # noqa: E501
         """Create new service instance and/or add new intent  # noqa: E501
 
@@ -366,7 +365,7 @@ class WorkflowCombinedApi(object):
             return data
 
     def instance_modify_si_uuid_post_with_http_info(self, body,
-                                             **kwargs):  # noqa: E501
+                                                    **kwargs):  # noqa: E501
         """Create new service instance and/or add new intent  # noqa: E501
 
         Creates a new service instance with the given UUID and intent specification or add new intent to existing service instance  # noqa: E501
@@ -421,13 +420,13 @@ class WorkflowCombinedApi(object):
                                    '/instance/' + kwargs['si_uuid'] + '/modify',
                                    body_params=body, query_params=query_params)
 
-
     def instance_get_status(self, **kwargs):  # noqa: E501
         """Get instance status  # noqa: E501
         Retrieves the full instance status.  # noqa: E501
         This method makes a synchronous HTTP request by default.
         :param async_req bool
         :param str si_uuid: Service instance UUID. (required)
+        :param str verbose: Verbose flag
         :return: str
                  If the method is called asynchronously,
                  returns the request thread.
@@ -459,11 +458,8 @@ class WorkflowCombinedApi(object):
                  returns the request thread.
         """
 
-        all_params = ['si_uuid']  # noqa: E501
-        all_params.append('async_req')
-        all_params.append('_return_http_data_only')
-        all_params.append('_preload_content')
-        all_params.append('_request_timeout')
+        all_params = ['si_uuid', 'verbose', 'status', 'async_req', '_return_http_data_only',
+                      '_preload_content', '_request_timeout']  # noqa: E501
 
         params = locals()
         for key, val in six.iteritems(params['kwargs']):
@@ -478,7 +474,17 @@ class WorkflowCombinedApi(object):
                 "Missing the required parameter `si_uuid` when calling `instance_si_uuid_status_get`"
             )  # noqa: E501
 
-        return self.client.request('GET', f'/instance/{kwargs.get("si_uuid")}/status')
+        if (kwargs.get("verbose")):
+            return self.client.request('GET', f'/instance/{kwargs.get("si_uuid")}')
+        elif (kwargs.get("status") == "phase"):
+            ret = self.client.request('GET', f'/instance/{kwargs.get("si_uuid")}/status/phase')
+        elif (kwargs.get("status") == "workflow"):
+            ret = self.client.request('GET', f'/instance/{kwargs.get("si_uuid")}/substatus')
+        elif (kwargs.get("status") == "configuration"):
+            ret = self.client.request('GET', f'/instance/{kwargs.get("si_uuid")}/status/configuration')
+        else:
+            ret = self.client.request('GET', f'/instance/{kwargs.get("si_uuid")}/status')
+        return ret.replace('"', '')
 
     def instance_get_intents(self, **kwargs):  # noqa: E501
         """Retrieve intents by service instance  # noqa: E501
@@ -680,7 +686,7 @@ class WorkflowCombinedApi(object):
             return data
 
     def instance_si_uuid_manifest_post_with_http_info(self, body,
-                                                    **kwargs):  # noqa: E501
+                                                      **kwargs):  # noqa: E501
         """Create new service instance and/or add new intent  # noqa: E501
 
         Creates a new service instance with the given UUID and intent specification or add new intent to existing service instance  # noqa: E501
