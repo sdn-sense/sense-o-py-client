@@ -133,7 +133,7 @@ class AddressApi(object):
             batch = 1
         else:
             batch = kwargs['batch']
-            if isinstance(batch, str) and not batch.isnumeric():
+            if not batch.isnumeric() and batch != 'subnet':
                 raise ValueError(
                     "Parameter `batch` must be either numeric or 'subnet'"
                 )  # noqa: E501
