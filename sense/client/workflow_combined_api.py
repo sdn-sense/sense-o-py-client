@@ -478,7 +478,7 @@ class WorkflowCombinedApi(object):
             return self.client.request('GET', f'/instance/{kwargs.get("si_uuid")}')
         elif (kwargs.get("status") == "phase"):
             ret = self.client.request('GET', f'/instance/{kwargs.get("si_uuid")}/status/phase')
-        elif (kwargs.get("status") == "workflow"):
+        elif (kwargs.get("status") == "substatus"):
             ret = self.client.request('GET', f'/instance/{kwargs.get("si_uuid")}/substatus')
         elif (kwargs.get("status") == "configuration"):
             ret = self.client.request('GET', f'/instance/{kwargs.get("si_uuid")}/status/configuration')

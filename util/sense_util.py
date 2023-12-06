@@ -48,12 +48,8 @@ if __name__ == "__main__":
                         help="address (ipv4, ipv6, mac, id) allocate, free and affiliate")
     parser.add_argument("--intent", action="append",
                         help="intent UUID parameter")
-    parser.add_argument("-ph", "--phase", action="store_true",
-                        help="Select phase status for status call")
-    parser.add_argument("-wf", "--workflow", action="store_true",
-                        help="Select workflow status for status call")
-    parser.add_argument("-cf", "--configuration", action="store_true",
-                        help="Select configuration status for status call")
+    parser.add_argument("-opt", "--options", action="append",
+                        help="Add additional options")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="verbose mode providing extra output")
 
@@ -140,6 +136,13 @@ if __name__ == "__main__":
             except ValueError:
                 workflowApi.instance_delete()
                 raise
+            if not args.verbose and '"model":' in response:
+                res_dict = json.loads(response)
+                if 'model' in res_dict:
+                    res_dict.pop('model')
+                if 'queries' in res_dict:
+                    res_dict.pop('queries')
+                response = json.dumps(res_dict)
             print(f"computed service instance: {response}")
     elif args.modify:
         if not args.file:
@@ -256,16 +259,12 @@ if __name__ == "__main__":
     elif args.status:
         if args.uuid:
             workflowApi = WorkflowCombinedApi()
-
-            if args.phase:
-                specStatus = "phase"
-            elif args.workflow:
-                specStatus = "workflow"
-            elif args.configuration:
-                specStatus = "configuration"
+            if args.options:
+                specStatus = args.options[0]
+                if specStatus not in ['phase','substatus','configuration']:
+                    specStatus = None
             else:
                 specStatus = None
-
             status = workflowApi.instance_get_status(si_uuid=args.uuid[0], status=specStatus, verbose=args.verbose)
             print(status)
         else:
