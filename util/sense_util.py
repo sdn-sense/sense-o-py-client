@@ -261,7 +261,9 @@ if __name__ == "__main__":
             workflowApi = WorkflowCombinedApi()
             if args.options:
                 specStatus = args.options[0]
-                if specStatus not in ['phase','substatus','configuration']:
+                if specStatus.lower() in ['phase','superstate','substatus','substate','configuration','configstate']:
+                    specStatus = specStatus.lower()
+                else:
                     specStatus = None
             else:
                 specStatus = None

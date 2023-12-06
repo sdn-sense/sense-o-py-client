@@ -476,11 +476,11 @@ class WorkflowCombinedApi(object):
 
         if (kwargs.get("verbose")):
             return self.client.request('GET', f'/instance/{kwargs.get("si_uuid")}')
-        elif (kwargs.get("status") == "phase"):
+        elif (kwargs.get("status") == "phase") or (kwargs.get("status") == "superstate"):
             ret = self.client.request('GET', f'/instance/{kwargs.get("si_uuid")}/status/phase')
-        elif (kwargs.get("status") == "substatus"):
+        elif (kwargs.get("status") == "substatus") or (kwargs.get("status") == "substate"):
             ret = self.client.request('GET', f'/instance/{kwargs.get("si_uuid")}/substatus')
-        elif (kwargs.get("status") == "configuration"):
+        elif (kwargs.get("status") == "configuration") or (kwargs.get("status") == "configstate"):
             ret = self.client.request('GET', f'/instance/{kwargs.get("si_uuid")}/status/configuration')
         else:
             ret = self.client.request('GET', f'/instance/{kwargs.get("si_uuid")}/status')
