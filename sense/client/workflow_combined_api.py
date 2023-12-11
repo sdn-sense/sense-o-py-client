@@ -245,7 +245,7 @@ class WorkflowCombinedApi(object):
                 "Missing the required parameter `si_uuid` when calling `instance_si_uuid_delete`"
             )  # noqa: E501
         try:
-            return self.client.request('DELETE', '/instance/' + kwargs['si_uuid'])
+            return self.client.request('PUT', '/instance/' + kwargs['si_uuid'] + '/delete')
         except ValueError:
             return self.client.request('DELETE', '/service/' + kwargs['si_uuid'])
 
