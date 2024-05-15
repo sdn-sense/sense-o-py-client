@@ -49,7 +49,12 @@ class ApiClient(object):
                 raise Exception('Config parameter %s is not set' % param)
 
     def getConfig(self, configFile='/etc/sense-o-auth.yaml'):
-        if not os.path.isfile(configFile):
+        """Get SENSE Auth config file"""
+        if os.getenv('SENSE_AUTH_OVERRIDE'):
+            configFile = os.getenv('SENSE_AUTH_OVERRIDE')
+            if not os.path.isfile(configFile):
+                raise Exception('SENSE_AUTH_OVERRIDE env flag set, but file not found: %s' % configFile)
+        elif not os.path.isfile(configFile):
             configFile = os.getenv('HOME') + '/.sense-o-auth.yaml'
             if not os.path.isfile(configFile):
                 raise Exception('Config file not found: %s' % configFile)
