@@ -1,7 +1,11 @@
+#!/usr/bin/env python3
+"""Request Wrapper for SENSE-0 API"""
+import os
 import sys
 
+import logging
+from http.client import HTTPConnection
 import requests
-
 from sense.client.apiclient import ApiClient
 
 sys.path.insert(0, '..')
@@ -9,20 +13,43 @@ sys.path.insert(0, '..')
 
 class RequestWrapper(ApiClient):
     def __init__(self):
+        self.debug = False
+        self.__setdebug()
         super(RequestWrapper, self).__init__()
+
+    def __setdebug(self):
+        """Set Debug and log all http call details to console"""
+        if not os.environ.get('SENSE_FULL_DEBUG'):
+            log = logging.getLogger('RequestWrapperSense')
+            log.setLevel(logging.DEBUG)
+            ch = logging.StreamHandler()
+            ch.setLevel(logging.DEBUG)
+            if ch in log.handlers:
+                log.addHandler(ch)
+            self.debug = False
+            return
+        if not self.debug:
+            log = logging.getLogger('RequestWrapperSense')
+            log.setLevel(logging.DEBUG)
+            ch = logging.StreamHandler()
+            ch.setLevel(logging.DEBUG)
+            if ch not in log.handlers:
+                log.removeHandler(ch)
+            HTTPConnection.debuglevel = 0
+            self.debug = True
 
     def _get(self, api_path, params):
         url = self.config['REST_API'] + api_path
         out = requests.get(url,
                            headers=self.config['headers'],
                            verify=self.config['verify'],
-                           params=params)
+                           params=params, timeout=os.environ.get('SENSE_TIMEOUT', 60))
         if out.status_code == 401:
             self._refreshToken()
             out = requests.get(url,
                                headers=self.config['headers'],
                                verify=self.config['verify'],
-                               params=params)
+                               params=params, timeout=os.environ.get('SENSE_TIMEOUT', 60))
         return out
 
     def _put(self, api_path, data, params):
@@ -31,14 +58,14 @@ class RequestWrapper(ApiClient):
                            headers=self.config['headers'],
                            verify=self.config['verify'],
                            data=data,
-                           params=params)
+                           params=params, timeout=os.environ.get('SENSE_TIMEOUT', 60))
         if out.status_code == 401:
             self._refreshToken()
             out = requests.put(url,
                                headers=self.config['headers'],
                                verify=self.config['verify'],
                                data=data,
-                               params=params)
+                               params=params, timeout=os.environ.get('SENSE_TIMEOUT', 60))
         return out
 
     def _post(self, api_path, data, params):
@@ -47,14 +74,14 @@ class RequestWrapper(ApiClient):
                             headers=self.config['headers'],
                             verify=self.config['verify'],
                             data=data,
-                            params=params)
+                            params=params, timeout=os.environ.get('SENSE_TIMEOUT', 60))
         if out.status_code == 401:
             self._refreshToken()
             out = requests.post(url,
                                 headers=self.config['headers'],
                                 verify=self.config['verify'],
                                 data=data,
-                                params=params)
+                                params=params, timeout=os.environ.get('SENSE_TIMEOUT', 60))
         return out
 
     def _delete(self, api_path, params):
@@ -62,16 +89,18 @@ class RequestWrapper(ApiClient):
         out = requests.delete(url,
                               headers=self.config['headers'],
                               verify=self.config['verify'],
-                              params=params)
+                              params=params, timeout=os.environ.get('SENSE_TIMEOUT', 60))
         if out.status_code == 401:
             self._refreshToken()
             out = requests.delete(url,
                                   headers=self.config['headers'],
                                   verify=self.config['verify'],
-                                  params=params)
+                                  params=params, timeout=os.environ.get('SENSE_TIMEOUT', 60))
         return out
 
     def request(self, call_type, api_path, **kwargs):
+        """Request Wrapper for SENSE-0 API (GET, PUT, POST, DELETE)"""
+        self.__setdebug()
         ret = None
         params = None
         if kwargs.get('query_params'):
@@ -86,7 +115,7 @@ class RequestWrapper(ApiClient):
                 ret = self._post(api_path, kwargs.get('body_params'), params)
             else:
                 raise ValueError(
-                    "Missing the body parameter for POST to '%s'" % api_path)
+                    f"Missing the body parameter for POST to '{api_path}'")
         elif call_type == "DELETE":
             ret = self._delete(api_path, params)
 
