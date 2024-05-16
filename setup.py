@@ -2,7 +2,7 @@ import setuptools
 
 from sense import __VERSION__
 
-with open("/Users/xiyang/Work/sense-o-py-client/requirements.txt", "r") as fh:
+with open("requirements.txt", "r", encoding="utf-8") as fh:
   requirements = fh.read()
 
 setuptools.setup(
