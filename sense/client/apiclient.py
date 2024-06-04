@@ -23,7 +23,7 @@ class ApiClient():
                                       verify=self.config['verify'],
                                       allow_redirects=self.config['allow_redirects'],
                                       auth=(self.config['CLIENT_ID'], self.config['SECRET']),
-                                      timeout=os.environ.get('SENSE_TIMEOUT', 60))
+                                      timeout=int(os.environ.get('SENSE_TIMEOUT', 60)))
         self.token = json.loads(tokenResponse.text)
         if 'error' in self.token.keys() and 'error_description' in self.token.keys():
             raise Exception(f"Failed to get token. Bad credentials? Error: {self.token['error_description']}")
