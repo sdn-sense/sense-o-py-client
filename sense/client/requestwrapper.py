@@ -35,7 +35,7 @@ class RequestWrapper(ApiClient):
             ch.setLevel(logging.DEBUG)
             if ch not in log.handlers:
                 log.removeHandler(ch)
-            HTTPConnection.debuglevel = 0
+            HTTPConnection.debuglevel = 1
             self.debug = True
 
     def _get(self, api_path, params):
