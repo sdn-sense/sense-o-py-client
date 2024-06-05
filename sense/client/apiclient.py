@@ -1,10 +1,14 @@
+#!/usr/bin/env python3
+"""API Client for SENSE-0 get Token and Config"""
 import os
 import json
 import requests
 from yaml import load as yload
+from sense.common import classwrapper
 
 requests.packages.urllib3.disable_warnings()
 
+@classwrapper
 class ApiClient():
     """API Client for SENSE-0 get Token and Config"""
     def __init__(self):

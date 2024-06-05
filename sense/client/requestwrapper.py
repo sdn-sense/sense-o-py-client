@@ -7,36 +7,38 @@ import logging
 from http.client import HTTPConnection
 import requests
 from sense.client.apiclient import ApiClient
+from sense.common import isDebugSet
+from sense.common import classwrapper
 
 sys.path.insert(0, '..')
 
 
+@classwrapper
 class RequestWrapper(ApiClient):
     def __init__(self):
-        self.debug = False
+        self.logger = None
         self.__setdebug()
         super(RequestWrapper, self).__init__()
 
     def __setdebug(self):
         """Set Debug and log all http call details to console"""
-        if not os.environ.get('SENSE_FULL_DEBUG'):
-            log = logging.getLogger('RequestWrapperSense')
-            log.setLevel(logging.DEBUG)
-            ch = logging.StreamHandler()
-            ch.setLevel(logging.DEBUG)
-            if ch in log.handlers:
-                log.addHandler(ch)
-            self.debug = False
-            return
-        if not self.debug:
-            log = logging.getLogger('RequestWrapperSense')
-            log.setLevel(logging.DEBUG)
-            ch = logging.StreamHandler()
-            ch.setLevel(logging.DEBUG)
-            if ch not in log.handlers:
-                log.removeHandler(ch)
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter(
+            "%(asctime)s.%(msecs)03d - %(name)s - %(levelname)s - %(message)s",
+            datefmt="%a, %d %b %Y %H:%M:%S",
+        )
+        handler.setFormatter(formatter)
+
+        logLevel = logging.INFO
+        if isDebugSet():
+            logLevel = logging.DEBUG
             HTTPConnection.debuglevel = 1
-            self.debug = True
+
+        self.logger = logging.getLogger('RequestWrapperSense')
+        if not self.logger.handlers:
+            self.logger.addHandler(handler)
+        self.logger.setLevel(logLevel)
+
 
     @staticmethod
     def _getHTTPTimeout():
@@ -132,7 +134,14 @@ class RequestWrapper(ApiClient):
             raise ValueError(
                     f"Returned code {ret.status_code} with error '{error_message}'")
 
-        if ret and self.config['headers'].get('Accept') == "application/json" and ret.headers.get("content-type") == "application/json":
-            return ret.json()
-
+        # If request headers and return headers are json, return json
+        # In case of failure - return text. Reason for doing so is to
+        # avoid issue of diff interpretation of json in java and python
+        # e.g. Java API will return str inside quotes (which is valid json based on RFC),
+        # but python (or atleast requests) will return str without quotes.
+        try:
+            if ret and self.config['headers'].get('Accept') == "application/json" and ret.headers.get("content-type") == "application/json":
+                return ret.json()
+        except:
+            pass
         return ret.text if ret.text is not None else ret
