@@ -110,7 +110,7 @@ class WorkflowCombinedApi():
                  If the method is called asynchronously,
                  returns the request thread.
         """
-        if self.si_uuid:
+        if self.si_uuid and not kwargs.get('si_uuid'):
             kwargs['si_uuid'] = self.si_uuid
         if not kwargs['si_uuid']:
             raise ValueError("Missing the required parameter `si_uuid`")
@@ -199,7 +199,7 @@ class WorkflowCombinedApi():
                  If the method is called asynchronously,
                  returns the request thread.
         """
-        if self.si_uuid:
+        if self.si_uuid and not kwargs.get('si_uuid'):
             kwargs['si_uuid'] = self.si_uuid
         if not kwargs['si_uuid']:
             raise ValueError("Missing the required parameter `si_uuid`")
@@ -267,7 +267,7 @@ class WorkflowCombinedApi():
                  If the method is called asynchronously,
                  returns the request thread.
         """
-        if self.si_uuid:
+        if self.si_uuid and not kwargs.get('si_uuid'):
             kwargs['si_uuid'] = self.si_uuid
         if not kwargs['si_uuid']:
             raise ValueError("Missing the required parameter `si_uuid`")
@@ -351,7 +351,7 @@ class WorkflowCombinedApi():
                  If the method is called asynchronously,
                  returns the request thread.
         """
-        if self.si_uuid:
+        if self.si_uuid and not kwargs.get('si_uuid'):
             kwargs['si_uuid'] = self.si_uuid
         if not kwargs['si_uuid']:
             raise ValueError("Missing the required parameter `si_uuid`")
@@ -432,7 +432,7 @@ class WorkflowCombinedApi():
                  If the method is called asynchronously,
                  returns the request thread.
         """
-        if self.si_uuid:
+        if self.si_uuid and not kwargs.get('si_uuid'):
             kwargs['si_uuid'] = self.si_uuid
         if not kwargs.get('si_uuid'):
             raise ValueError("Missing the required parameter `si_uuid`")
@@ -498,7 +498,7 @@ class WorkflowCombinedApi():
                  If the method is called asynchronously,
                  returns the request thread.
         """
-        if self.si_uuid:
+        if self.si_uuid and not kwargs.get('si_uuid'):
             kwargs['si_uuid'] = self.si_uuid
         if not kwargs['si_uuid']:
             raise ValueError("Missing the required parameter `si_uuid`")
@@ -669,7 +669,7 @@ class WorkflowCombinedApi():
                  If the method is called asynchronously,
                  returns the request thread.
         """
-        if self.si_uuid:
+        if self.si_uuid and not kwargs.get('si_uuid'):
             kwargs['si_uuid'] = self.si_uuid
         if not kwargs['si_uuid']:
             raise ValueError("Missing the required parameter `si_uuid`")
