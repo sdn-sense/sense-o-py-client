@@ -4,21 +4,7 @@ import os
 import inspect
 import time
 import json
-
-@functionwrapper
-def loadJSON(path):
-    """Load JSON file"""
-    ret = None
-    with open(path, 'r', encoding="utf-8") as fd:
-        ret = json.load(fd)
-    return ret
-
-@functionwrapper
-def isDebugSet():
-    """Check if debug is set"""
-    if os.environ.get('SENSE_FULL_DEBUG'):
-        return True
-    return False
+from yaml import safe_load as yload
 
 def functionwrapper(func):
     """Function wrapper to print start/runtime/end"""
@@ -37,7 +23,6 @@ def functionwrapper(func):
 
     return wrapper
 
-
 def classwrapper(cls):
     """Class wrapper to print all functions start/runtime/end"""
     for name, method in cls.__dict__.items():
@@ -51,3 +36,41 @@ def classwrapper(cls):
                     if firstParam == 'self':
                         setattr(cls, name, functionwrapper(method))
     return cls
+
+def loadJSON(path):
+    """Load JSON file"""
+    ret = None
+    with open(path, 'r', encoding="utf-8") as fd:
+        ret = json.load(fd)
+    return ret
+
+def isDebugSet():
+    """Check if debug is set"""
+    if os.environ.get('SENSE_FULL_DEBUG'):
+        return True
+    return False
+
+def loadYamlFile(fname):
+    """Load Yaml file"""
+    try:
+        with open(fname, 'r', encoding='utf-8') as fd:
+            return yload(fd.read())
+    except Exception as e:
+        print(f"Error loading yaml file: {fname}. Error: {e}")
+    return {}
+
+def getConfig(configFile='/etc/sense-o-auth.yaml'):
+    """Get SENSE Auth config file"""
+    if os.getenv('SENSE_AUTH_OVERRIDE'):
+        configFile = os.getenv('SENSE_AUTH_OVERRIDE')
+        if not os.path.isfile(configFile):
+            raise Exception(f"SENSE_AUTH_OVERRIDE env flag set, but file not found: {configFile}")
+    elif not os.path.isfile(configFile):
+        configFile = os.getenv('HOME') + '/.sense-o-auth.yaml'
+        if not os.path.isfile(configFile):
+            raise Exception(f"Config file not found: {configFile}")
+    return loadYamlFile(configFile)
+
+def getHTTPTimeout():
+    """Get HTTP Timeout from env or default to 60 seconds"""
+    return int(os.environ.get('SENSE_TIMEOUT', 60))

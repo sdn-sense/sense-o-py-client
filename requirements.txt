@@ -2,3 +2,4 @@ six
 requests
 pyyaml
 pytest
+GitPython

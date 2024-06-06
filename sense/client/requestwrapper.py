@@ -8,6 +8,7 @@ from http.client import HTTPConnection
 import requests
 from sense.client.apiclient import ApiClient
 from sense.common import isDebugSet
+from sense.common import getHTTPTimeout
 from sense.common import classwrapper
 
 sys.path.insert(0, '..')
@@ -40,23 +41,18 @@ class RequestWrapper(ApiClient):
         self.logger.setLevel(logLevel)
 
 
-    @staticmethod
-    def _getHTTPTimeout():
-        """Get HTTP Timeout from env or default to 60 seconds"""
-        return int(os.environ.get('SENSE_TIMEOUT', 60))
-
     def _get(self, api_path, params):
         url = self.config['REST_API'] + api_path
         out = requests.get(url,
                            headers=self.config['headers'],
                            verify=self.config['verify'],
-                           params=params, timeout=self._getHTTPTimeout())
+                           params=params, timeout=getHTTPTimeout())
         if out.status_code == 401:
             self._refreshToken()
             out = requests.get(url,
                                headers=self.config['headers'],
                                verify=self.config['verify'],
-                               params=params, timeout=self._getHTTPTimeout())
+                               params=params, timeout=getHTTPTimeout())
         return out
 
     def _put(self, api_path, data, params):
@@ -65,14 +61,14 @@ class RequestWrapper(ApiClient):
                            headers=self.config['headers'],
                            verify=self.config['verify'],
                            data=data,
-                           params=params, timeout=self._getHTTPTimeout())
+                           params=params, timeout=getHTTPTimeout())
         if out.status_code == 401:
             self._refreshToken()
             out = requests.put(url,
                                headers=self.config['headers'],
                                verify=self.config['verify'],
                                data=data,
-                               params=params, timeout=self._getHTTPTimeout())
+                               params=params, timeout=getHTTPTimeout())
         return out
 
     def _post(self, api_path, data, params):
@@ -81,14 +77,14 @@ class RequestWrapper(ApiClient):
                             headers=self.config['headers'],
                             verify=self.config['verify'],
                             data=data,
-                            params=params, timeout=self._getHTTPTimeout())
+                            params=params, timeout=getHTTPTimeout())
         if out.status_code == 401:
             self._refreshToken()
             out = requests.post(url,
                                 headers=self.config['headers'],
                                 verify=self.config['verify'],
                                 data=data,
-                                params=params, timeout=self._getHTTPTimeout())
+                                params=params, timeout=getHTTPTimeout())
         return out
 
     def _delete(self, api_path, params):
@@ -96,13 +92,13 @@ class RequestWrapper(ApiClient):
         out = requests.delete(url,
                               headers=self.config['headers'],
                               verify=self.config['verify'],
-                              params=params, timeout=self._getHTTPTimeout())
+                              params=params, timeout=getHTTPTimeout())
         if out.status_code == 401:
             self._refreshToken()
             out = requests.delete(url,
                                   headers=self.config['headers'],
                                   verify=self.config['verify'],
-                                  params=params, timeout=self._getHTTPTimeout())
+                                  params=params, timeout=getHTTPTimeout())
         return out
 
     def request(self, call_type, api_path, **kwargs):

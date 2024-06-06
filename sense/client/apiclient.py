@@ -3,8 +3,8 @@
 import os
 import json
 import requests
-from yaml import load as yload
 from sense.common import classwrapper
+from sense.common import getConfig
 
 requests.packages.urllib3.disable_warnings()
 
@@ -13,8 +13,10 @@ class ApiClient():
     """API Client for SENSE-0 get Token and Config"""
     def __init__(self):
         # For now only pass config file; Later all params
-        self.token, self.config = None, None
-        self.getConfig()
+        self.config = getConfig()
+        self._validateConfig()
+        self._setDefaults()
+        self.token = None
         self._getToken()
 
     def _getToken(self):
@@ -40,7 +42,6 @@ class ApiClient():
 
     def _refreshToken(self):
         """Refresh Token from SENSE-0 Auth API"""
-        self.getConfig()
         self._getToken()
 
     def _setDefaults(self):
@@ -56,18 +57,3 @@ class ApiClient():
         for param in ['AUTH_ENDPOINT', 'API_ENDPOINT', 'USERNAME', 'PASSWORD', 'CLIENT_ID', 'SECRET']:
             if param not in self.config.keys():
                 raise Exception(f"Config parameter {param} is not set")
-
-    def getConfig(self, configFile='/etc/sense-o-auth.yaml'):
-        """Get SENSE Auth config file"""
-        if os.getenv('SENSE_AUTH_OVERRIDE'):
-            configFile = os.getenv('SENSE_AUTH_OVERRIDE')
-            if not os.path.isfile(configFile):
-                raise Exception(f"SENSE_AUTH_OVERRIDE env flag set, but file not found: {configFile}")
-        elif not os.path.isfile(configFile):
-            configFile = os.getenv('HOME') + '/.sense-o-auth.yaml'
-            if not os.path.isfile(configFile):
-                raise Exception(f"Config file not found: {configFile}")
-        with open(configFile, 'r', encoding="utf-8") as fd:
-            self.config = yload(fd.read())
-        self._validateConfig()
-        self._setDefaults()
