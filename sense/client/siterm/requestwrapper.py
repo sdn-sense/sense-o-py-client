@@ -105,15 +105,16 @@ class RequestWrapper(GitRepo):
             raise Exception(f"Wrong action call {kwargs}")
         # GET
         if kwargs.get('verb') == 'GET':
-            out = requests.get(url, cert=self.cert,
+            out = requests.get(url, cert=self.cert, params=kwargs.get('urlparams', None),
                                verify=self.config['SITERM_VERIFY'], timeout=getHTTPTimeout())
         # POST
         elif kwargs.get('verb') == 'POST':
             out = requests.post(url, cert=self.cert, json=kwargs.get('data', {}),
+                                params=kwargs.get('urlparams', None),
                                 verify=self.config['SITERM_VERIFY'], timeout=getHTTPTimeout())
         # PUT
         elif kwargs.get('verb') == 'PUT':
             out = requests.put(url, cert=self.cert, json=kwargs.get('data', {}),
+                               params=kwargs.get('urlparams', None),
                                verify=self.config['SITERM_VERIFY'], timeout=getHTTPTimeout())
-
-        return json.loads(out.text), out.ok, out
+        return out.text, out.ok, out

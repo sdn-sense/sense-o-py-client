@@ -84,6 +84,13 @@ class DebugApi:
                                        url=f"/{sitename}/sitefe/json/frontend/getdebug/{kwargs['id']}",
                                        **{"verb": "GET", "data": {}})
 
+    def get_all_debug_hostname(self, **kwargs):
+        """Get all debug info from SENSE-SiteRM Endpoint"""
+        sitename = self._validate_input(["sitename", "hostname", "state"], kwargs, "get-all-debug")
+        return self.client.makeRequest(sitename=sitename,
+                                       url=f"/{sitename}/sitefe/json/frontend/getalldebughostname/{kwargs['hostname']}/{kwargs['state']}",
+                                       **{"verb": "GET", "data": {}})
+
     def delete_debug(self, **kwargs):
         """Delete debug info in SENSE-SiteRM Endpoint"""
         sitename = self._validate_input(["sitename", "id"], kwargs, "delete-debug")
