@@ -122,6 +122,21 @@ class SENSEWorker():
         return response
 
     @timer_func
+    def _cancelwrap(self, si_uuid, force):
+        """Wrap the cancel function"""
+        try:
+            self.workflowApi.instance_operate('cancel', si_uuid=si_uuid, force=force)
+        except ValueError as ex:
+            print(f"({self.workerid}) Error: {ex}")
+            # Check status and return
+            status = self.workflowApi.instance_get_status(si_uuid=si_uuid, verbose=True)
+            print(f'({self.workerid}) Final cancel status: {status}')
+            # TIMEOUT!!! OR VALUE ERROR? CANCEL FAILED - NEED TO CHECK WHAT IS THE STATUS
+            # ENABLE PDB TO BREAK!
+            import pdb; pdb.set_trace()
+            print(status)
+
+    @timer_func
     def cancel(self, response, incr):
         """Cancel a service instance in SENSE-0"""
         self.starttime = int(time.time())
@@ -132,9 +147,9 @@ class SENSEWorker():
         if 'CREATE' not in status and 'REINSTATE' not in status and 'MODIFY' not in status:
             raise ValueError(f"({self.workerid}) cannot cancel an instance in '{status}' status...")
         if 'READY' not in status:
-            self.workflowApi.instance_operate('cancel', si_uuid=response['service_uuid'], force='true')
+            self._cancelwrap(response['service_uuid'], 'true')
         else:
-            self.workflowApi.instance_operate('cancel', si_uuid=response['service_uuid'])
+            self._cancelwrap(response['service_uuid'], 'false')
         status = {'state': 'CANCEL - PENDING', 'configState': 'UNKNOWN'}
         while not self._validateState(status, 'cancel', incr):
             time.sleep(1)
@@ -206,17 +221,18 @@ if __name__ == "__main__":
         print(f"Count of repeat cancel/resubmit submissions: {args.repeats}")
     # Start multiple trheads based on passed config parameters
     threads = []
-    for i in range(args.count):
-        worker = SENSEWorker(args, i)
-        thworker = threading.Thread(target=worker.startwork, args=(args.repeats+1,))
-        threads.append(thworker)
-        thworker.start()
-    print('join all threads and wait for finish')
-    for t in threads:
-        t.join()
-    print('all threads finished')
-# create
-# for i in range:
-  # cancel-i
-  # reprovision-i
-  # cancel-i
+    if args.count == 1:
+        print("Starting single thread")
+        worker = SENSEWorker(args)
+        worker.startwork(args.repeats+1)
+    elif args.count > 1:
+        print("Starting multiple threads")
+        for i in range(args.count):
+            worker = SENSEWorker(args, i)
+            thworker = threading.Thread(target=worker.startwork, args=(args.repeats+1,))
+            threads.append(thworker)
+            thworker.start()
+        print('join all threads and wait for finish')
+        for t in threads:
+            t.join()
+        print('all threads finished')

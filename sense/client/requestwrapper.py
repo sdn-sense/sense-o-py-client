@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Request Wrapper for SENSE-0 API"""
-import os
 import sys
 
 import logging
@@ -9,6 +8,7 @@ import requests
 from sense.client.apiclient import ApiClient
 from sense.common import isDebugSet
 from sense.common import getHTTPTimeout
+from sense.common import getHTTPRetries
 from sense.common import classwrapper
 
 sys.path.insert(0, '..')
@@ -16,6 +16,7 @@ sys.path.insert(0, '..')
 
 @classwrapper
 class RequestWrapper(ApiClient):
+    """Request Wrapper for SENSE-0 API (GET, PUT, POST, DELETE)"""
     def __init__(self):
         self.logger = None
         self.__setdebug()
@@ -101,26 +102,39 @@ class RequestWrapper(ApiClient):
                                   params=params, timeout=getHTTPTimeout())
         return out
 
-    def request(self, call_type, api_path, **kwargs):
-        """Request Wrapper for SENSE-0 API (GET, PUT, POST, DELETE)"""
+    def _requestwrap(self, call_type, api_path, **kwargs):
+        """"""
         self.__setdebug()
         ret = None
-        params = None
+        params = {}
         if kwargs.get('query_params'):
             params = kwargs.get('query_params')
+        retries = getHTTPRetries()
+        while retries > 0:
+            try:
+                if call_type == "GET":
+                    ret = self._get(api_path, params)
+                elif call_type == "PUT":
+                    ret = self._put(api_path, kwargs.get('body_params'), params)
+                elif call_type == "POST":
+                    if kwargs.get('body_params'):
+                        ret = self._post(api_path, kwargs.get('body_params'), params)
+                    else:
+                        raise ValueError(
+                            f"Missing the body parameter for POST to '{api_path}'")
+                elif call_type == "DELETE":
+                    ret = self._delete(api_path, params)
+            except requests.exceptions.ReadTimeout as ex:
+                self.logger.error(f"Got ReadTimeout exception: {ex}. Retrying up to {retries} times")
+                retries -= 1
+                continue
+            break
+        return ret
 
-        if call_type == "GET":
-            ret = self._get(api_path, params)
-        elif call_type == "PUT":
-            ret = self._put(api_path, kwargs.get('body_params'), params)
-        elif call_type == "POST":
-            if kwargs.get('body_params'):
-                ret = self._post(api_path, kwargs.get('body_params'), params)
-            else:
-                raise ValueError(
-                    f"Missing the body parameter for POST to '{api_path}'")
-        elif call_type == "DELETE":
-            ret = self._delete(api_path, params)
+
+    def request(self, call_type, api_path, **kwargs):
+        """Request Wrapper for SENSE-0 API (GET, PUT, POST, DELETE)"""
+        ret = self._requestwrap(call_type, api_path, **kwargs)
 
         if ret is not None and ret.status_code >= 400 and ret.headers.get("content-type") == "application/json":
             json = ret.json()
