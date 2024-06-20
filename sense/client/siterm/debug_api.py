@@ -24,7 +24,7 @@ class DebugApi:
         """Submit a debug call to the SENSE-SiteRM API"""
         sitename = self._validate_input(keys, kwargs, kwargs.get("type"))
 
-        return self.client.makeRequest(sitename=sitename, url="/sitefe/json/frontend/submitdebug/NEW",
+        return self.client.makeRequest(sitename=sitename, url=f"{kwargs['sitename']}/sitefe/json/frontend/submitdebug/NEW",
                                        **{"verb": "POST", "data": kwargs})
 
     def submit_ping(self, **kwargs):

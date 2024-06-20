@@ -72,8 +72,8 @@ def getConfig(configFile='/etc/sense-o-auth.yaml'):
     return loadYamlFile(configFile)
 
 def getHTTPTimeout():
-    """Get HTTP Timeout from env or default to 60 seconds"""
-    return int(os.environ.get('SENSE_TIMEOUT', 60))
+    """Get HTTP Timeout from env or default to 300 seconds"""
+    return int(os.environ.get('SENSE_TIMEOUT', 300))
 
 def getHTTPRetries():
     """Get HTTP Retries from env or default to 3"""
