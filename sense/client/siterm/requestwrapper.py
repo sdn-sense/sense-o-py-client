@@ -117,4 +117,12 @@ class RequestWrapper(GitRepo):
             out = requests.put(url, cert=self.cert, json=kwargs.get('data', {}),
                                params=kwargs.get('urlparams', None),
                                verify=self.config['SITERM_VERIFY'], timeout=getHTTPTimeout())
-        return out.text, out.ok, out
+        outval = ""
+        try:
+            if out.headers.get("content-type") == "application/json":
+                outval = out.json()
+        except:
+            outval = out.text
+
+
+        return outval, out.ok, out
