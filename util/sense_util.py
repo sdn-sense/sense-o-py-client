@@ -330,6 +330,13 @@ if __name__ == "__main__":
             if len(response) == 0 or "ERROR" in response:
                 raise ValueError(f"Discover query failed with option `{args.discover}`")
             print(json.dumps(json.loads(response), indent=2))
+        elif discover_opts[0] == 'lookup_metadata':
+            if len(discover_opts) != 2:
+                raise ValueError(f"Invalid discover query option `{args.discover}`")
+            response = discoverApi.discover_lookup_name_get(discover_opts[1], search='metadata')
+            if len(response) == 0 or "ERROR" in response:
+                raise ValueError(f"Discover query failed with option `{args.discover}`")
+            print(json.dumps(json.loads(response), indent=2))
         elif discover_opts[0] == 'lookup_rooturi':
             if len(discover_opts) != 2:
                 raise ValueError(f"Invalid discover query option `{args.discover}`")
