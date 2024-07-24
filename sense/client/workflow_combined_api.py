@@ -657,26 +657,16 @@ class WorkflowCombinedApi():
         return self.client.request('GET', '/profile/' + uuid)
 
     def manifest_create(self, template, **kwargs):
-        """Create new service instance and/or add new intent
-
-        Creates a new service instance with the given UUID and intent specification
-          or add new intent to existing service instance  # noqa: E501
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-        >>> thread = api.instance_create(body, si_uuid, async_req=True)
-        >>> result = thread.get()
-
+        """Create manifest query
         :param async_req bool
         :param ServiceIntent body: Service instance creation request object. (required)
-        :param str si_uuid: Service instance UUID. (required)
+        :param str si_uuid: Service instance UUID. (optional)
         :return: ServiceIntentResponse
                  If the method is called asynchronously,
                  returns the request thread.
         """
         if self.si_uuid and not kwargs.get('si_uuid'):
             kwargs['si_uuid'] = self.si_uuid
-        if not kwargs['si_uuid']:
-            raise ValueError("Missing the required parameter `si_uuid`")
 
         kwargs['_return_http_data_only'] = True
 
@@ -727,15 +717,6 @@ class WorkflowCombinedApi():
             raise ValueError(
                 "Missing the required parameter `body` when calling `instance_modify`"
             )  # noqa: E501
-        # verify the required parameter 'si_uuid' is set
-        if ('si_uuid' not in params or params['si_uuid'] is None):
-            raise ValueError(
-                "Missing the required parameter `si_uuid` when calling `instance_modify`"
-            )  # noqa: E501
-
-        path_params = {}
-        if 'si_uuid' in params:
-            path_params['siUUID'] = params['si_uuid']  # noqa: E501
 
         query_params = []
         if 'sync' in params:
@@ -745,7 +726,15 @@ class WorkflowCombinedApi():
         # Authentication setting
         # auth_settings = ['oAuth2Keycloak']  # noqa: E501
         self.client.config['headers']['Content-type'] = 'application/xml'
-        return self.client.request('POST',
-                                   f'/service/manifest/{kwargs["si_uuid"]}',
+        path_params = {}
+        if 'si_uuid' in params:
+            path_params['siUUID'] = params['si_uuid']  # noqa: E501
+            return self.client.request('POST',
+                                   f'/service/manifest/{params["si_uuid"]}',
+                                   body_params=body,
+                                   query_params=query_params)
+        else:
+            return self.client.request('POST',
+                                   f'/service/manifest',
                                    body_params=body,
                                    query_params=query_params)

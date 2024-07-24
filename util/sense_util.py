@@ -357,6 +357,16 @@ if __name__ == "__main__":
             workflowApi.si_uuid = args.uuid[0]
             response = workflowApi.manifest_create(json.dumps(teamplate))
             print(str(response))
+        elif args.file:
+            workflowApi = WorkflowCombinedApi()
+            if not os.path.isfile(args.file[0]):
+                raise Exception('template file not found: %s' % args.file[0])
+            template_file = open(args.file[0])
+            teamplate = json.load(template_file)
+            template_file.close()
+            workflowApi.si_uuid = None
+            response = workflowApi.manifest_create(json.dumps(teamplate))
+            print(str(response))
         else:
             raise ValueError(f"Invalid manifest options: require both -f josn_template and -u uuid")
     elif args.address:
