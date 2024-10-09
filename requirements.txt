@@ -5,3 +5,4 @@ pytest
 GitPython
 zipp>=3.19.1
 urllib3>=2.2.2
+certifi>=2022.12.7 
