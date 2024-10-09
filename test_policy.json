@@ -1,0 +1,7 @@
+{
+    "type": "ACCESS",
+    "name": "test-policy",
+    "principal": "new_proxy",
+    "path": "$",
+    "level": "WRITE"
+}

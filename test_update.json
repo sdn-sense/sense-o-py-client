@@ -1,0 +1,10 @@
+[
+  {
+    "path": "$.agents.test_agent.host.fqdn",
+    "value": "new_2dev.net"
+  },
+  {
+    "path": "$.agents.hive_agent.host.fqdn",
+    "value": "new_2dev.com"
+  }
+]

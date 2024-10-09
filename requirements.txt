@@ -2,4 +2,7 @@ six
 requests
 pyyaml
 pytest
-certifi>=2022.12.7 # not directly required, pinned by Snyk to avoid a vulnerability
+GitPython
+zipp>=3.19.1
+urllib3>=2.2.2
+certifi>=2022.12.7 

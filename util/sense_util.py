@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
-import sys
 import os
 import json
 
+from sense.client.address_api import AddressApi
+from sense.client.metadata_api import MetadataApi
 from sense.client.workflow_combined_api import WorkflowCombinedApi
 from sense.client.profile_api import ProfileApi
 from sense.client.discover_api import DiscoverApi
@@ -19,6 +20,8 @@ if __name__ == "__main__":
                             help="cancel (and not delete) an existing service instance (requires -u)")
     operations.add_argument("-co", "--compute", action="store_true",
                             help="compute (compile only) a service intent (requires one of optional -f, optional -u)")
+    operations.add_argument("-mo", "--modify", action="store_true",
+                            help="modify and an already provisioned service instance (requires -f -u)")
     operations.add_argument("-pr", "--provision", action="store_true",
                             help="provision an already computed service instance (requires -u)")
     operations.add_argument("-r", "--reprovision", action="store_true",
@@ -31,16 +34,38 @@ if __name__ == "__main__":
                             help="get service instance status (requires -u)")
     operations.add_argument("-p", "--profile", action="store_true",
                             help="describe a service profile (requires -u)")
+    operations.add_argument("-m", "--manifest", action="store_true",
+                            help="create manfiest with template (requires -f -u)")
+    operations.add_argument("-M", "--metadata-get", action="store_true",
+                            help="Retrieve metadata record (requires --domain --name)")
+    operations.add_argument("--metadata-post", action="store_true",
+                            help="Add/replace metadata record (requires --domain --name --file)")
+    operations.add_argument("--metadata-update", action="store_true",
+                            help="Update specific metadata record fields (requires --domain --name --file)")
+    operations.add_argument("--metapolicy-get", action="store_true",
+                            help="Retrieve the policies of a metadata record (requires --domain --name)")
+    operations.add_argument("--metapolicy-update", action="store_true",
+                            help="Updates a policy of a metadata record (requires --domain --name --file)")
+    operations.add_argument("--metapolicy-delete", action="store_true",
+                            help="Removes a policy of a metadata record (requires --domain --name --policy)")
     parser.add_argument("-f", "--file", action="append",
                         help="service intent request file")
     parser.add_argument("-u", "--uuid", action="append",
                         help="service profile uuid or instance uuid")
     parser.add_argument("-n", "--name", action="append",
-                        help="service instance alias name")
+                        help="service instance alias or metadata record name")
+    parser.add_argument("--domain", action="append",
+                        help="metadata record domain")
+    parser.add_argument("--policy", action="append",
+                        help="metadata policy name")
     parser.add_argument("--discover", action="append",
                         help="discover information via model query")
+    parser.add_argument("--address", action="append",
+                        help="address (ipv4, ipv6, mac, id) allocate, free and affiliate")
     parser.add_argument("--intent", action="append",
                         help="intent UUID parameter")
+    parser.add_argument("-opt", "--options", action="append",
+                        help="Add additional options")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="verbose mode providing extra output")
 
@@ -127,7 +152,31 @@ if __name__ == "__main__":
             except ValueError:
                 workflowApi.instance_delete()
                 raise
+            if not args.verbose and '"model":' in response:
+                res_dict = json.loads(response)
+                if 'model' in res_dict:
+                    res_dict.pop('model')
+                if 'queries' in res_dict:
+                    res_dict.pop('queries')
+                response = json.dumps(res_dict)
             print(f"computed service instance: {response}")
+    elif args.modify:
+        if not args.file:
+            raise ValueError("Missing the request file `-f mod_intent_json_file`")
+        workflowApi = WorkflowCombinedApi()
+        if not os.path.isfile(args.file[0]):
+            raise Exception('request file not found: %s' % args.file[0])
+        intent_file = open(args.file[0])
+        intent = json.load(intent_file)
+        intent_file.close()
+        if not args.uuid:
+            raise ValueError("Missing the instance uuid `-u uuid`")
+        workflowApi.si_uuid = args.uuid[0]
+        try:
+            response = workflowApi.instance_modify(json.dumps(intent), sync='true')
+        except ValueError:
+            raise
+        print(f"modified service instance: {response}")
     elif args.cancel:
         if args.uuid:
             workflowApi = WorkflowCombinedApi()
@@ -138,7 +187,7 @@ if __name__ == "__main__":
                 raise ValueError(f"cannot cancel an instance in '{status}' status...")
             elif 'READY' not in status:
                 workflowApi.instance_operate('cancel', si_uuid=args.uuid[0], sync='true', force='true')
-            else:     
+            else:
                 workflowApi.instance_operate('cancel', si_uuid=args.uuid[0], sync='true')
             status = workflowApi.instance_get_status(si_uuid=args.uuid[0])
             print(f'cancel status={status}')
@@ -154,12 +203,15 @@ if __name__ == "__main__":
             status = workflowApi.instance_get_status(si_uuid=args.uuid[0])
             if 'error' in status:
                 raise ValueError(status)
-            if 'CREATE' not in status:
+            if 'CREATE' not in status and 'REINSTATE' not in status:
                 raise ValueError(f"cannot provision an instance in '{status}' status...")
             elif 'COMPILED' not in status:
                 raise ValueError(f"cannot provision an instance in '{status}' status...")
             else:
-                workflowApi.instance_operate('provision', si_uuid=args.uuid[0], sync='true')
+                if args.intent:
+                    workflowApi.instance_operate('provision', si_uuid=args.uuid[0], sync='true', intent=args.intent[0])
+                else:
+                    workflowApi.instance_operate('provision', si_uuid=args.uuid[0], sync='true')
             status = workflowApi.instance_get_status(si_uuid=args.uuid[0])
             print(f'provision status={status}')
     elif args.reprovision:
@@ -172,12 +224,14 @@ if __name__ == "__main__":
                 raise ValueError(f"cannot reprovision an instance in '{status}' status...")
             elif 'READY' not in status:
                 if args.intent:
-                    workflowApi.instance_operate('reprovision', si_uuid=args.uuid[0], sync='true', force='true', intent=args.intent[0])
+                    workflowApi.instance_operate('reprovision', si_uuid=args.uuid[0], sync='true', force='true',
+                                                 intent=args.intent[0])
                 else:
                     workflowApi.instance_operate('reprovision', si_uuid=args.uuid[0], sync='true', force='true')
             else:
                 if args.intent:
-                    workflowApi.instance_operate('reprovision', si_uuid=args.uuid[0], sync='true', intent=args.intent[0])
+                    workflowApi.instance_operate('reprovision', si_uuid=args.uuid[0], sync='true',
+                                                 intent=args.intent[0])
                 else:
                     workflowApi.instance_operate('reprovision', si_uuid=args.uuid[0], sync='true')
             status = workflowApi.instance_get_status(si_uuid=args.uuid[0])
@@ -221,7 +275,16 @@ if __name__ == "__main__":
     elif args.status:
         if args.uuid:
             workflowApi = WorkflowCombinedApi()
-            status = workflowApi.instance_get_status(si_uuid=args.uuid[0])
+            if args.options:
+                specStatus = args.options[0]
+                if specStatus.lower() in ['phase', 'superstate', 'substatus', 'substate', 'configuration',
+                                          'configstate']:
+                    specStatus = specStatus.lower()
+                else:
+                    specStatus = None
+            else:
+                specStatus = None
+            status = workflowApi.instance_get_status(si_uuid=args.uuid[0], status=specStatus, verbose=args.verbose)
             print(status)
         else:
             raise ValueError("Missing the required parameter `uuid` ")
@@ -284,6 +347,13 @@ if __name__ == "__main__":
             if len(response) == 0 or "ERROR" in response:
                 raise ValueError(f"Discover query failed with option `{args.discover}`")
             print(json.dumps(json.loads(response), indent=2))
+        elif discover_opts[0] == 'lookup_metadata':
+            if len(discover_opts) != 2:
+                raise ValueError(f"Invalid discover query option `{args.discover}`")
+            response = discoverApi.discover_lookup_name_get(discover_opts[1], search='metadata')
+            if len(response) == 0 or "ERROR" in response:
+                raise ValueError(f"Discover query failed with option `{args.discover}`")
+            print(json.dumps(json.loads(response), indent=2))
         elif discover_opts[0] == 'lookup_rooturi':
             if len(discover_opts) != 2:
                 raise ValueError(f"Invalid discover query option `{args.discover}`")
@@ -293,3 +363,140 @@ if __name__ == "__main__":
             print(str(response))
         else:
             raise ValueError(f"Invalid discover query option `{args.discover}`")
+    elif args.manifest:
+        if args.uuid and args.file:
+            workflowApi = WorkflowCombinedApi()
+            if not os.path.isfile(args.file[0]):
+                raise Exception('template file not found: %s' % args.file[0])
+            template_file = open(args.file[0])
+            teamplate = json.load(template_file)
+            template_file.close()
+            workflowApi.si_uuid = args.uuid[0]
+            response = workflowApi.manifest_create(json.dumps(teamplate))
+            print(str(response))
+        elif args.file:
+            workflowApi = WorkflowCombinedApi()
+            if not os.path.isfile(args.file[0]):
+                raise Exception('template file not found: %s' % args.file[0])
+            template_file = open(args.file[0])
+            teamplate = json.load(template_file)
+            template_file.close()
+            workflowApi.si_uuid = None
+            response = workflowApi.manifest_create(json.dumps(teamplate))
+            print(str(response))
+        else:
+            raise ValueError(f"Invalid manifest options: require both -f josn_template and -u uuid")
+    elif args.metadata_get:
+        if args.domain and args.name:
+            metadataAPI = MetadataApi()
+            record = metadataAPI.get_metadata(domain=args.domain[0], name=args.name[0])
+            print(record)
+        else:
+            raise ValueError(f"Invalid metadata-get options: requires -d domain and -n name")
+    elif args.metadata_post:
+        if args.domain and args.name and args.file:
+            metadataAPI = MetadataApi()
+            if not os.path.isfile(args.file[0]):
+                raise Exception('data file not found: %s' % args.file[0])
+            template_file = open(args.file[0])
+            data = json.load(template_file)
+            record = metadataAPI.post_metadata(json.dumps(data), domain=args.domain[0], name=args.name[0]),
+            print(record)
+        else:
+            raise ValueError(f"Invalid metadata-post options: requires -d domain and -n name and -f data-file")
+    elif args.metadata_update:
+        if args.domain and args.name and args.file:
+            metadataAPI = MetadataApi()
+            if not os.path.isfile(args.file[0]):
+                raise Exception('data file not found: %s' % args.file[0])
+            template_file = open(args.file[0])
+            data = json.load(template_file)
+            record = metadataAPI.update_metadata(json.dumps(data), domain=args.domain[0], name=args.name[0]),
+            print(record)
+        else:
+            raise ValueError(f"Invalid metadata-update options: requires -d domain and -n name and -f data-file")
+    elif args.metapolicy_get:
+        if args.domain and args.name:
+            metadataAPI = MetadataApi()
+            record = metadataAPI.get_metadata_policies(domain=args.domain[0], name=args.name[0])
+            print(record)
+        else:
+            raise ValueError(f"Invalid metapolicy-get options: requires -d domain and -n name")
+    elif args.metapolicy_update:
+        if args.domain and args.name and args.file:
+            metadataAPI = MetadataApi()
+            if not os.path.isfile(args.file[0]):
+                raise Exception('data file not found: %s' % args.file[0])
+            template_file = open(args.file[0])
+            data = json.load(template_file)
+            record = metadataAPI.update_metadata_policy(json.dumps(data), domain=args.domain[0], name=args.name[0]),
+            print(record)
+        else:
+            raise ValueError(f"Invalid metapolicy-update options: requires -d domain and -n name and -f data-file")
+    elif args.metapolicy_delete:
+        if args.domain and args.name and args.policy:
+            metadataAPI = MetadataApi()
+            record = metadataAPI.delete_metadata_policy(domain=args.domain[0], name=args.name[0], policy=args.policy[0])
+            print(record)
+        else:
+            raise ValueError(f"Invalid metapolicy-delete options: requires --domain and --name and --policy")
+    elif args.address:
+        addressApi = AddressApi()
+        address_opts = args.address[0].split(",")
+        params = {}
+        if address_opts[0] == 'allocate':
+            for i in range(1, len(address_opts)):
+                kv = address_opts[i].split('=')
+                if len(kv) != 2:
+                    raise ValueError(f"Invalid address allocate option field:`{address_opts[i]}`")
+                params[kv[0]] = kv[1]
+            if 'pool' not in params:
+                raise ValueError(f"Missing a 'pool' paramter in the allocate option")
+            if 'type' not in params:
+                raise ValueError(f"Missing a 'type' paramter in the allocate option")
+            if 'name' not in params:
+                raise ValueError(f"Missing a 'name' paramter in the allocate option")
+            pool = params['pool']
+            del params['pool']
+            atype = params['type']
+            del params['type']
+            name = params['name']
+            del params['name']
+            response = addressApi.allocate_address(pool, atype, name, **params)
+            if len(response) == 0 or "ERROR" in response:
+                raise ValueError(f"Address allocate failed with option `{args.address}`")
+            print(response)
+        elif address_opts[0] == 'free':
+            for i in range(1, len(address_opts)):
+                kv = address_opts[i].split('=')
+                if len(kv) != 2:
+                    raise ValueError(f"Invalid address free option field:`{address_opts[i]}`")
+                params[kv[0]] = kv[1]
+            if 'pool' not in params:
+                raise ValueError(f"Missing a 'pool' paramter in the free option")
+            pool = params['pool']
+            del params['pool']
+            response = addressApi.free_address(pool, **params)
+            if "ERROR" in response:
+                raise ValueError(f"Address free failed with option `{args.address}`")
+            print(response)
+        elif address_opts[0] == 'affiliate':
+            for i in range(1, len(address_opts)):
+                kv = address_opts[i].split('=')
+                if len(kv) != 2:
+                    raise ValueError(f"Invalid address affiliate option field:`{address_opts[i]}`")
+                params[kv[0]] = kv[1]
+            if 'pool' not in params:
+                raise ValueError(f"Missing a 'pool' paramter in the affiliate option")
+            if 'uri' not in params:
+                raise ValueError(f"Missing a 'uri' paramter in the affiliate option")
+            pool = params['pool']
+            del params['pool']
+            uri = params['uri']
+            del params['uri']
+            response = addressApi.affiliate_address(pool, uri, **params)
+            if "ERROR" in response:
+                raise ValueError(f"Address affiliate failed with option `{args.address}`")
+            print(response)
+        else:
+            raise ValueError(f"Invalid address allocate/free/affiliate options")
