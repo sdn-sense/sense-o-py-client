@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
-import sys
 import os
 import json
 
 from sense.client.address_api import AddressApi
+from sense.client.metadata_api import MetadataApi
 from sense.client.workflow_combined_api import WorkflowCombinedApi
 from sense.client.profile_api import ProfileApi
 from sense.client.discover_api import DiscoverApi
@@ -36,12 +36,28 @@ if __name__ == "__main__":
                             help="describe a service profile (requires -u)")
     operations.add_argument("-m", "--manifest", action="store_true",
                             help="create manfiest with template (requires -f -u)")
+    operations.add_argument("-M", "--metadata-get", action="store_true",
+                            help="Retrieve metadata record (requires --domain --name)")
+    operations.add_argument("--metadata-post", action="store_true",
+                            help="Add/replace metadata record (requires --domain --name --file)")
+    operations.add_argument("--metadata-update", action="store_true",
+                            help="Update specific metadata record fields (requires --domain --name --file)")
+    operations.add_argument("--metapolicy-get", action="store_true",
+                            help="Retrieve the policies of a metadata record (requires --domain --name)")
+    operations.add_argument("--metapolicy-update", action="store_true",
+                            help="Updates a policy of a metadata record (requires --domain --name --file)")
+    operations.add_argument("--metapolicy-delete", action="store_true",
+                            help="Removes a policy of a metadata record (requires --domain --name --policy)")
     parser.add_argument("-f", "--file", action="append",
                         help="service intent request file")
     parser.add_argument("-u", "--uuid", action="append",
                         help="service profile uuid or instance uuid")
     parser.add_argument("-n", "--name", action="append",
-                        help="service instance alias name")
+                        help="service instance alias or metadata record name")
+    parser.add_argument("--domain", action="append",
+                        help="metadata record domain")
+    parser.add_argument("--policy", action="append",
+                        help="metadata policy name")
     parser.add_argument("--discover", action="append",
                         help="discover information via model query")
     parser.add_argument("--address", action="append",
@@ -261,7 +277,8 @@ if __name__ == "__main__":
             workflowApi = WorkflowCombinedApi()
             if args.options:
                 specStatus = args.options[0]
-                if specStatus.lower() in ['phase','superstate','substatus','substate','configuration','configstate']:
+                if specStatus.lower() in ['phase', 'superstate', 'substatus', 'substate', 'configuration',
+                                          'configstate']:
                     specStatus = specStatus.lower()
                 else:
                     specStatus = None
@@ -357,8 +374,72 @@ if __name__ == "__main__":
             workflowApi.si_uuid = args.uuid[0]
             response = workflowApi.manifest_create(json.dumps(teamplate))
             print(str(response))
+        elif args.file:
+            workflowApi = WorkflowCombinedApi()
+            if not os.path.isfile(args.file[0]):
+                raise Exception('template file not found: %s' % args.file[0])
+            template_file = open(args.file[0])
+            teamplate = json.load(template_file)
+            template_file.close()
+            workflowApi.si_uuid = None
+            response = workflowApi.manifest_create(json.dumps(teamplate))
+            print(str(response))
         else:
             raise ValueError(f"Invalid manifest options: require both -f josn_template and -u uuid")
+    elif args.metadata_get:
+        if args.domain and args.name:
+            metadataAPI = MetadataApi()
+            record = metadataAPI.get_metadata(domain=args.domain[0], name=args.name[0])
+            print(record)
+        else:
+            raise ValueError(f"Invalid metadata-get options: requires -d domain and -n name")
+    elif args.metadata_post:
+        if args.domain and args.name and args.file:
+            metadataAPI = MetadataApi()
+            if not os.path.isfile(args.file[0]):
+                raise Exception('data file not found: %s' % args.file[0])
+            template_file = open(args.file[0])
+            data = json.load(template_file)
+            record = metadataAPI.post_metadata(json.dumps(data), domain=args.domain[0], name=args.name[0]),
+            print(record)
+        else:
+            raise ValueError(f"Invalid metadata-post options: requires -d domain and -n name and -f data-file")
+    elif args.metadata_update:
+        if args.domain and args.name and args.file:
+            metadataAPI = MetadataApi()
+            if not os.path.isfile(args.file[0]):
+                raise Exception('data file not found: %s' % args.file[0])
+            template_file = open(args.file[0])
+            data = json.load(template_file)
+            record = metadataAPI.update_metadata(json.dumps(data), domain=args.domain[0], name=args.name[0]),
+            print(record)
+        else:
+            raise ValueError(f"Invalid metadata-update options: requires -d domain and -n name and -f data-file")
+    elif args.metapolicy_get:
+        if args.domain and args.name:
+            metadataAPI = MetadataApi()
+            record = metadataAPI.get_metadata_policies(domain=args.domain[0], name=args.name[0])
+            print(record)
+        else:
+            raise ValueError(f"Invalid metapolicy-get options: requires -d domain and -n name")
+    elif args.metapolicy_update:
+        if args.domain and args.name and args.file:
+            metadataAPI = MetadataApi()
+            if not os.path.isfile(args.file[0]):
+                raise Exception('data file not found: %s' % args.file[0])
+            template_file = open(args.file[0])
+            data = json.load(template_file)
+            record = metadataAPI.update_metadata_policy(json.dumps(data), domain=args.domain[0], name=args.name[0]),
+            print(record)
+        else:
+            raise ValueError(f"Invalid metapolicy-update options: requires -d domain and -n name and -f data-file")
+    elif args.metapolicy_delete:
+        if args.domain and args.name and args.policy:
+            metadataAPI = MetadataApi()
+            record = metadataAPI.delete_metadata_policy(domain=args.domain[0], name=args.name[0], policy=args.policy[0])
+            print(record)
+        else:
+            raise ValueError(f"Invalid metapolicy-delete options: requires --domain and --name and --policy")
     elif args.address:
         addressApi = AddressApi()
         address_opts = args.address[0].split(",")

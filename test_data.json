@@ -1,0 +1,37 @@
+{
+  "agents": {
+    "test_agent": {
+      "host": {
+        "fqdn": "test_dev.net",
+        "public_ipv4": "A.B.C.D",
+        "shared_unique_id": "other_id"
+      }
+    },
+    "hive_agent": {
+      "host": {
+        "fqdn": "localhost",
+        "public_ipv4": "E.F.G.H",
+        "shared_unique_id": "new_id"
+      }
+    }
+  },
+  "tasks": {
+    "test_task": {
+      "name": "Clean up workspace.",
+      "type": "user_access",
+      "trigger": "immediate",
+      "action": "add",
+      "status": "init",
+      "ref": "anything",
+      "option": {
+        "foo": "bar"
+      },
+      "locked_by": "user_id",
+      "lock_expiry": "1720266478",
+      "result": {
+        "dir": "pathname",
+        "data": "blah"
+      }
+    }
+  }
+}
