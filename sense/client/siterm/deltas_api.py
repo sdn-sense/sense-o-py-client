@@ -47,3 +47,13 @@ class DeltasApi:
         return self.client.makeRequest(sitename=sitename,
                                         url=f"/{sitename}/sitefe/v1/deltastates/{kwargs.get('delta_id')}",
                                         **{"verb": "GET", "data": {}})
+
+
+    def forceapplydelta(self, **kwargs):
+        """Force Apply Delta inside SiteRM"""
+        sitename = self._getSitename(**kwargs)
+        if not ('uuid' in kwargs and kwargs['uuid']):
+            raise Exception("Force apply requires delta uuid to be passed as argument.")
+        return self.client.makeRequest(sitename=sitename,
+                                        url=f"/{sitename}/sitefe/v1/deltaforceapply",
+                                        **{"verb": "POST", "data": {"uuid": kwargs["uuid"]}})
