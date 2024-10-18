@@ -1,0 +1,17 @@
+config:
+  - manifest_template:
+      - al2s_l2vpn_manifest_template:
+          terminals:
+            - id: "?switch_id?"
+              port: "?vlanport?"
+              vlan: "?vlantag?"
+              sparql: 'SELECT DISTINCT ?na_slice_id ?switch_id ?vlantag ?vlanport WHERE {
+                    ?swsvc mrs:providesSubnet ?subnet. ?subnet nml:hasBidirectionalPort ?vlanport.
+                    ?subnet mrs:hasNetworkAddress ?na_slice_id. ?na_slice_id mrs:type "switch-id".
+                     ?na_slice_id mrs:value ?switch_id. ?vlanport nml:hasLabel ?alabel. ?alabel nml:value ?vlantag.
+                    }'
+resource:
+  - service:
+      - al2s_l2vpn:
+          profile: AL2S-L2VPN
+          manifest_template: '{{ manifest_template.al2s_l2vpn_manifest_template }}'

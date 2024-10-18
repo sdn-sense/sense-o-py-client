@@ -1,0 +1,24 @@
+config:
+  - edit_template:
+      - fabric_l2vpn_edit_template:
+          data.connections[0].terminals[0].vlan_tag: 3610
+          data.connections[0].terminals[1].vlan_tag: 3611
+  - manifest_template:
+      - fabric_l2vpn_manifest_template:
+          terminals:
+            - id: "?slice_id?"
+              port: "?vlanport?"
+              vlan: "?vlantag?"
+              name: "?slice_name?"
+              sparql: 'SELECT DISTINCT ?slice_name ?slice_id ?vlantag ?vlanport WHERE {
+                    ?swsvc mrs:providesSubnet ?subnet. ?subnet nml:hasBidirectionalPort ?vlanport.
+                    ?subnet nml:name ?slice_name.
+                    ?subnet mrs:hasNetworkAddress ?na_slice_id. ?na_slice_id mrs:type "slice-id".
+                     ?na_slice_id mrs:value ?slice_id. ?vlanport nml:hasLabel ?alabel. ?alabel nml:value ?vlantag.
+                    }'
+resource:
+  - service:
+      - fabric_l2vpn:
+          profile: FABRIC-L2-Net 
+          edit_template: '{{ edit_template.fabric_l2vpn_edit_template }}'
+          manifest_template: '{{ manifest_template.fabric_l2vpn_manifest_template }}'
