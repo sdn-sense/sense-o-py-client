@@ -13,8 +13,8 @@ class SenseProvider(Provider):
     def __init__(self, *, type, label, name, config: dict):
         super().__init__(type=type, label=label, name=name, logger=logger, config=config)
         self.supported_resources = [Constants.RES_TYPE_SERVICE]
-        self._handled_modify = False
         self._client = None
+        self._being_deleted = dict()
 
     def setup_environment(self):
         for attr in SENSE_CONF_ATTRS:
@@ -33,6 +33,9 @@ class SenseProvider(Provider):
     def client(self):
         return self._client
 
+    def supports_modify(self):
+        return True
+
     def do_validate_resource(self, *, resource: dict):
         label = resource[Constants.LABEL]
         rtype = resource[Constants.RES_TYPE]
@@ -45,71 +48,95 @@ class SenseProvider(Provider):
 
     def do_add_resource(self, *, resource: dict):
         self._init_client()
-        creation_details = resource[Constants.RES_CREATION_DETAILS]
-
-        if not creation_details['in_config_file']:
-            return
-
         label = resource[Constants.LABEL]
         assert resource[Constants.RES_TYPE] in self.supported_resources
-        net_name = self.resource_name(resource)
         profile = resource[Constants.PROFILE]
-        assert profile, f"Must have a profile for {net_name}"
+        assert profile, f"Must have a profile for {label}"
         edit_template = resource.get("edit_template", dict())
-        manifest_template = resource.get("manifest_template", str())
-        net = SenseService(client=self.client, label=label, name=net_name, profile=profile,
-                           edit_template=edit_template,
-                           manifest_template=manifest_template)
-        self.services.append(net)
-        self.resource_listener.on_added(source=self, provider=self, resource=net)
+        manifest_template = resource.get("manifest_template", dict())
+        count = resource[Constants.RES_COUNT]
+
+        for idx in range(0, count):
+            serv_name = self.resource_name(resource, idx)
+            serv = SenseService(client=self.client, label=label, name=serv_name, profile=profile,
+                                edit_template=edit_template,
+                                manifest_template=manifest_template)
+            self.services.append(serv)
+            self.resource_listener.on_added(source=self, provider=self, resource=serv)
 
     def do_create_resource(self, *, resource: dict):
-        assert self.client
         assert resource[Constants.RES_TYPE] in self.supported_resources
         label = resource[Constants.LABEL]
+        self._init_client()
         self.logger.info(f"{self.name}: Creating resource {label} ....")
 
-        if not self._handled_modify and self.modified:
-            self._handled_modify = True
-            self.logger.warning(f"{self.name}:Modified state: Deleting sense resources ...")
-            net_name = self.resource_name(resource)
-            profile = resource[Constants.PROFILE]
-            edit_template = resource.get("edit_template", dict())
-            manifest_template = resource.get("manifest_template", str())
-            net = SenseService(
-                client=self.client,
-                label=label, name=net_name, profile=profile,
-                edit_template=edit_template,
-                manifest_template=manifest_template)
+        if self.modified:
+            for serv_name in set(self.existing_map[label]) - set(self.added_map[label]):
+                self.logger.warning(f"{self.name}:Modified count of resource: Deleting {serv_name} ...")
+                saved_state = next(filter(lambda s: s.attributes['name'] == serv_name,
+                                          resource[Constants.SAVED_STATES]))
+                profile = saved_state.attributes[Constants.PROFILE]
+                edit_template = saved_state.attributes["edit_template"]
+                manifest_template = saved_state.attributes["manifest_template"]
+                serv = SenseService(
+                    client=self.client,
+                    label=label, name=serv_name, profile=profile,
+                    edit_template=edit_template,
+                    manifest_template=manifest_template)
 
-            try:
-                net.delete()
-                self.logger.warning(f"Deleted sense resource:{net_name}")
-            except Exception as e:
-                self.logger.error(f"Exception deleting sense resource:{net_name}", e)
+                serv.delete()
+                self._being_deleted[serv_name] = serv
+                self.logger.warning(f"Done deleting sense resource:{serv_name}")
 
-        for net in [net for net in self._services if net.label == label]:
-            self.logger.debug(f"Creating resource: {net.name}")
-            net.create()
-            self.resource_listener.on_created(source=self, provider=self, resource=net)
-            self.logger.debug(f"Created resource: {net.name}")
+        for serv in filter(lambda s: s.label == label, self.services):
+            self.logger.debug(f"Creating resource: {serv.name}")
+            serv.create()
+
+    def do_wait_for_create_resource(self, *, resource: dict):
+        assert resource[Constants.RES_TYPE] in self.supported_resources
+        label = resource[Constants.LABEL]
+        self._init_client()
+        self.logger.info(f"{self.name}: Waiting on Create resource {label} ....")
+
+        if self.modified:
+            for serv_name in set(self.existing_map[label]) - set(self.added_map[label]):
+                serv = self._being_deleted.pop(serv_name)
+                serv.wait_for_delete()
+                self.logger.warning(f"Done waiting on deleting sense resource:{serv_name}")
+                self.resource_listener.on_deleted(source=self, provider=self, resource=serv)
+
+        for serv in filter(lambda s: s.label == label, self.services):
+            self.logger.debug(f"Waiting on Create resource: {serv.name}")
+            serv.wait_for_create()
+            self.logger.debug(f"Resource has been created {serv.name}")
+            self.resource_listener.on_created(source=self, provider=self, resource=serv)
+            self.logger.debug(f"Notified Resource has been created: {serv.name}")
 
     def do_delete_resource(self, *, resource: dict):
         self._init_client()
         assert self.client
         assert resource[Constants.RES_TYPE] in self.supported_resources
         label = resource[Constants.LABEL]
-        net_name = self.resource_name(resource)
-        logger.info(f"Deleting resource: {net_name}")
+        logger.info(f"Deleting resource: {label}")
         edit_template = resource.get("edit_template", dict())
-        manifest_template = resource.get("manifest_template", str())
+        manifest_template = resource.get("manifest_template", dict())
         profile = resource[Constants.PROFILE]
-        net = SenseService(client=self.client,
-                           label=label, name=net_name,
-                           profile=profile,
-                           edit_template=edit_template,
-                           manifest_template=manifest_template)
+        count = resource[Constants.RES_COUNT]
+        services = list()
 
-        net.delete()
-        logger.debug(f"Done Deleting resource: {net_name}")
-        self.resource_listener.on_deleted(source=self, provider=self, resource=net)
+        for idx in range(0, count):
+            serv_name = self.resource_name(resource, idx)
+            serv = SenseService(client=self.client,
+                                label=label, name=serv_name,
+                                profile=profile,
+                                edit_template=edit_template,
+                                manifest_template=manifest_template)
+
+            serv.delete()
+            services.append(serv)
+
+        for serv in services:
+            serv.wait_for_delete()
+            self.resource_listener.on_deleted(source=self, provider=self, resource=serv)
+
+        logger.info(f"Done Deleting resource: {label}")

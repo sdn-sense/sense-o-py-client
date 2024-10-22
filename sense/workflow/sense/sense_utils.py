@@ -9,6 +9,7 @@ from .sense_constants import *
 from .sense_exceptions import SenseException
 
 from sense.workflow.base.utils import get_logger
+from ...client.address_api import AddressApi
 
 logger = get_logger()
 
@@ -84,20 +85,25 @@ def create_instance(*, client, profile, alias, edit_template):
 
 
 def instance_operate(*, client, si_uuid):
-    workflow_api = WorkflowCombinedApi(req_wrapper=client)
-
     import time
     from random import randint
 
+    workflow_api = WorkflowCombinedApi(req_wrapper=client)
     status = workflow_api.instance_get_status(si_uuid=si_uuid)
 
     if "CREATE - COMMITTING" not in status:
         try:
-            time.sleep(randint(5, 30))
-            workflow_api.instance_operate('provision', si_uuid=si_uuid, sync='false')
+            time.sleep(randint(5, 10))
+            workflow_api.instance_operate('provision', si_uuid=si_uuid, async_req=True)
         except Exception as e:
             logger.warning(f"exception from instance_operate {e}")
-            pass
+
+
+def wait_for_instance_operate(*, client, si_uuid):
+    import time
+    from random import randint
+
+    workflow_api = WorkflowCombinedApi(req_wrapper=client)
 
     for attempt in range(SENSE_RETRY):
         try:
@@ -145,9 +151,29 @@ def delete_instance(*, client, si_uuid):
         time.sleep(random.randint(5, 30))
 
         if 'READY' not in status:
-            workflow_api.instance_operate('cancel', si_uuid=si_uuid, sync='false', force='true')
+            workflow_api.instance_operate('cancel', si_uuid=si_uuid, async_req=True, force=True)
         else:
-            workflow_api.instance_operate('cancel', si_uuid=si_uuid, sync='false')
+            workflow_api.instance_operate('cancel', si_uuid=si_uuid, async_req=True)
+
+
+def wait_for_delete_instance(*, client, si_uuid):
+    import time
+    import random
+
+    workflow_api = WorkflowCombinedApi(req_wrapper=client)
+    status = workflow_api.instance_get_status(si_uuid=si_uuid)
+
+    if 'error' in status:
+        raise SenseException("error deleting got " + status)
+
+    if 'FAILED' in status:
+        raise SenseException(f'cannot delete instance - contact admin. {status}')
+
+    if "CREATE - COMPILED" in status:
+        time.sleep(random.randint(5, 30))
+
+        workflow_api.instance_delete(si_uuid=si_uuid)
+        return
 
     for attempt in range(SENSE_RETRY):
         # This sleep is here to workaround issue where CANCEL-READY shows up prematurely.
@@ -196,30 +222,18 @@ def service_instance_details(*, client, si_uuid):
     raise SenseException('no details found')
 
 
-def discover_service_instances(*, client):
+# TODO Handle error
+# /discover/service/instances?search=test-gcp-vms
+def find_instance_by_alias(*, client, alias):
     discover_api = DiscoverApi(req_wrapper=client)
-    response = discover_api.discover_service_instances_get()
+    response = discover_api.discover_service_instances_get(search=alias)
     instances = response['instances']
 
-    for instance in instances:
-        temp = SimpleNamespace(**instance)
-        instance['intents'] = []
+    if not instances:
+        return None
 
-        for intent in temp.intents:
-            intent['json'] = json.loads(intent['json'])
-            instance['intents'].append(intent)
-
-    return instances
-
-
-def find_instance_by_alias(*, client, alias):
-    instances = discover_service_instances(client=client)
-
-    for instance in instances:
-        if instance['alias'] == alias:
-            return instance['referenceUUID']
-
-    return None
+    instance = instances[0]
+    return instance['referenceUUID']
 
 
 def manifest_create(*, client, template, alias=None, si_uuid=None):
@@ -244,3 +258,11 @@ def manifest_create(*, client, template, alias=None, si_uuid=None):
         time.sleep(10)
 
     raise SenseException(f"Unable to retrieve manifest using {template}")
+
+
+def allocate_address(*, client, name, pool, addr_type, scope=None, batch=None):
+    assert addr_type in ['IPv4', 'IPv6', 'MAC', 'ID']
+    address_api = AddressApi(req_wrapper=client)
+    scope = scope or None
+    batch = batch or 2
+    address_api.allocate_address(pool, addr_type, name, scope=scope, batch=batch)

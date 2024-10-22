@@ -27,8 +27,8 @@ class SenseService(Service):
         else:
             self.manifest_template: dict = manifest_template
 
-        self.id = ''
-        self.state = ''
+        self.id = str()
+        self.state = str()
         self.intents = list()
         self.manifest = dict()
 
@@ -48,15 +48,21 @@ class SenseService(Service):
             status = sense_utils.instance_get_status(client=self._client, si_uuid=si_uuid)
             logger.info(f"Found existing {self.name} {si_uuid} with status={status}")
 
+        self.id = si_uuid
+
         if 'FAILED' in status:
             raise SenseException(f"Found instance {si_uuid} with status={status}")
 
         if 'CREATE - READY' not in status:
             logger.debug(f"Provisioning {self.name}")
-            status = sense_utils.instance_operate(client=self._client, si_uuid=si_uuid)
+            sense_utils.instance_operate(client=self._client, si_uuid=si_uuid)
+
+    def wait_for_create(self):
+        si_uuid = self.id
+        status = sense_utils.wait_for_instance_operate(client=self._client, si_uuid=si_uuid)
 
         if 'CREATE - READY' not in status:
-            raise Exception(f"Creation failed for {si_uuid} {status}")
+            raise SenseException(f"Creation failed for {si_uuid} {status}")
 
         logger.debug(f"Retrieving details {self.name} {status}")
         instance_dict = sense_utils.service_instance_details(client=self._client, si_uuid=si_uuid)
@@ -68,7 +74,7 @@ class SenseService(Service):
         for key in SERVICE_INSTANCE_KEYS:
             assert key in instance_dict
 
-        self.id = instance_dict['referenceUUID']
+        assert self.id == instance_dict['referenceUUID']
         self.state = instance_dict['state']
         self.intents = instance_dict['intents']
 
@@ -87,4 +93,13 @@ class SenseService(Service):
 
         if si_uuid:
             sense_utils.delete_instance(client=self._client, si_uuid=si_uuid)
+            logger.debug(f"Deleted {self.name} {si_uuid}")
+
+    def wait_for_delete(self):
+        si_uuid = sense_utils.find_instance_by_alias(client=self._client, alias=self.name)
+
+        logger.debug(f"Deleting {self.name} {si_uuid}")
+
+        if si_uuid:
+            sense_utils.wait_for_delete_instance(client=self._client, si_uuid=si_uuid)
             logger.debug(f"Deleted {self.name} {si_uuid}")

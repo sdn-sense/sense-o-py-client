@@ -16,7 +16,7 @@ class DependencyResolver:
             self.dependency_label = Constants.INTERNAL_DEPENDENCIES
             self.resolved_dependency_label = Constants.RESOLVED_INTERNAL_DEPENDENCIES
 
-    def check_if_external_dependencies_are_resolved(self, *, resource: dict):
+    def check_if_dependencies_are_resolved(self, *, resource: dict):
         label = resource[Constants.LABEL]
         self.logger.info(f"Checking if all dependencies are resolved for {label} using {self.label}")
 
