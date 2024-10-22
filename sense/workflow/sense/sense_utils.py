@@ -4,11 +4,9 @@ from types import SimpleNamespace
 from sense.client.discover_api import DiscoverApi
 from sense.client.profile_api import ProfileApi
 from sense.client.workflow_combined_api import WorkflowCombinedApi
-
+from sense.workflow.base.utils import get_logger
 from .sense_constants import *
 from .sense_exceptions import SenseException
-
-from sense.workflow.base.utils import get_logger
 
 logger = get_logger()
 
@@ -23,7 +21,9 @@ def describe_profile(*, client, uuid: str):
 
         for ns in profile_details.edit:
             ns.path = utils.unquote(ns.path)
-            ns.valid = utils.unquote(ns.valid)
+
+            if hasattr(ns, 'valid'):
+                ns.valid = utils.unquote(ns.valid)
 
     return profile_details
 
@@ -56,7 +56,6 @@ def create_instance(*, client, profile, alias, edit_template):
     options = []
 
     for k, v in edit_template.items():
-        # path = "data.gateways[0].connects[0]." + k
         options.append({k: str(v)})
 
     if options:
@@ -65,46 +64,38 @@ def create_instance(*, client, profile, alias, edit_template):
 
     logger.info(f'Intent: {json.dumps(intent, indent=2)}')
     intent = json.dumps(intent)
+    logger.info(f"creating instance: {alias}")
+    response = workflow_api.instance_create(intent, async_req=True)
+    return response['service_uuid']
 
+
+def instance_operate(*, client, si_uuid, action='provision'):
     import time
     from random import randint
 
-    for attempt in range(SENSE_RETRY):
-        try:
-            logger.info(f"creating instance: {alias}:attempt={attempt + 1}")
-            response = workflow_api.instance_create(intent)  # service_uuid, intent_uuid, queries, model
-            status = workflow_api.instance_get_status()
-            return response['service_uuid'], status
-        except Exception as e:
-            logger.warning(f"exception while creating instance {e}")
-
-        time.sleep(randint(30, 35))
-
-    raise SenseException(f"could not create instance {alias}")
-
-
-def instance_operate(*, client, si_uuid):
     workflow_api = WorkflowCombinedApi(req_wrapper=client)
-
-    import time
-    from random import randint
-
     status = workflow_api.instance_get_status(si_uuid=si_uuid)
 
-    if "CREATE - COMMITTING" not in status:
+    if "CREATE - COMMITTING" not in status or 'CANCEL - READY' == status:
         try:
-            time.sleep(randint(5, 30))
-            workflow_api.instance_operate('provision', si_uuid=si_uuid, sync='false')
+            time.sleep(randint(5, 10))
+            workflow_api.instance_operate(action, si_uuid=si_uuid, async_req=True)
         except Exception as e:
             logger.warning(f"exception from instance_operate {e}")
-            pass
+
+
+def wait_for_instance_create(*, client, si_uuid):
+    import time
+    from random import randint
+
+    workflow_api = WorkflowCombinedApi(req_wrapper=client)
 
     for attempt in range(SENSE_RETRY):
         try:
             status = workflow_api.instance_get_status(si_uuid=si_uuid)
-            logger.info(f"Waiting on CREATED-READY: status={status}:attempt={attempt} out of {SENSE_RETRY}")
+            logger.info(f"Waiting on CREATED COMPILED: status={status}:attempt={attempt} out of {SENSE_RETRY}")
 
-            if 'CREATE - READY' in status:
+            if status in ['CREATE - COMPILED']:
                 break
 
             if 'FAILED' in status:
@@ -113,7 +104,33 @@ def instance_operate(*, client, si_uuid):
             logger.warning(f"exception from  instance_get_status {e}")
             pass
 
-        logger.info(f"Waiting on CREATED-READY: going to sleep attempt={attempt}")
+        logger.info(f"Waiting on CREATE COMPILED: going to sleep attempt={attempt}")
+        time.sleep(randint(30, 35))
+
+    return workflow_api.instance_get_status(si_uuid=si_uuid)
+
+
+def wait_for_instance_operate(*, client, si_uuid):
+    import time
+    from random import randint
+
+    workflow_api = WorkflowCombinedApi(req_wrapper=client)
+
+    for attempt in range(SENSE_RETRY):
+        try:
+            status = workflow_api.instance_get_status(si_uuid=si_uuid)
+            logger.info(f"Waiting on CREATE/REINSTATE-READY: status={status}:attempt={attempt} out of {SENSE_RETRY}")
+
+            if status in ['CREATE - READY', 'REINSTATE - READY']:
+                break
+
+            if 'FAILED' in status:
+                break
+        except Exception as e:
+            logger.warning(f"exception from  instance_get_status {e}")
+            pass
+
+        logger.info(f"Waiting on CREATE/REINSTATE-READY: going to sleep attempt={attempt}")
         time.sleep(randint(30, 35))
 
     return workflow_api.instance_get_status(si_uuid=si_uuid)
@@ -130,12 +147,15 @@ def delete_instance(*, client, si_uuid):
         raise SenseException("error deleting got " + status)
 
     if 'FAILED' in status:
+        instance_dict = service_instance_details(client=client, si_uuid=si_uuid)
+        lastState = instance_dict['lastState']
+
+        if lastState in ['INIT', 'COMPILED']:
+            return
+
         raise SenseException(f'cannot delete instance - contact admin. {status}')
 
     if "CREATE - COMPILED" in status:
-        time.sleep(random.randint(5, 30))
-
-        workflow_api.instance_delete(si_uuid=si_uuid)
         return
 
     if "CANCEL" not in status:
@@ -145,9 +165,34 @@ def delete_instance(*, client, si_uuid):
         time.sleep(random.randint(5, 30))
 
         if 'READY' not in status:
-            workflow_api.instance_operate('cancel', si_uuid=si_uuid, sync='false', force='true')
+            workflow_api.instance_operate('cancel', si_uuid=si_uuid, async_req=True, force=True)
         else:
-            workflow_api.instance_operate('cancel', si_uuid=si_uuid, sync='false')
+            workflow_api.instance_operate('cancel', si_uuid=si_uuid, async_req=True)
+
+
+def wait_for_delete_instance(*, client, si_uuid):
+    import time
+    import random
+
+    workflow_api = WorkflowCombinedApi(req_wrapper=client)
+    status = workflow_api.instance_get_status(si_uuid=si_uuid)
+
+    if 'error' in status:
+        raise SenseException("error deleting got " + status)
+
+    if 'FAILED' in status:
+        instance_dict = service_instance_details(client=client, si_uuid=si_uuid)
+        lastState = instance_dict['lastState']
+
+        if lastState in ['INIT', 'COMPILED']:
+            workflow_api.instance_delete(si_uuid=si_uuid)
+            return
+
+        raise SenseException(f'cannot delete instance - contact admin. {status}')
+    elif "CREATE - COMPILED" in status:
+        time.sleep(random.randint(5, 30))
+        workflow_api.instance_delete(si_uuid=si_uuid)
+        return
 
     for attempt in range(SENSE_RETRY):
         # This sleep is here to workaround issue where CANCEL-READY shows up prematurely.
@@ -196,30 +241,18 @@ def service_instance_details(*, client, si_uuid):
     raise SenseException('no details found')
 
 
-def discover_service_instances(*, client):
+# TODO Handle error
+# /discover/service/instances?search=test-gcp-vms
+def find_instance_by_alias(*, client, alias):
     discover_api = DiscoverApi(req_wrapper=client)
-    response = discover_api.discover_service_instances_get()
+    response = discover_api.discover_service_instances_get(search=alias)
     instances = response['instances']
 
-    for instance in instances:
-        temp = SimpleNamespace(**instance)
-        instance['intents'] = []
+    if not instances:
+        return None
 
-        for intent in temp.intents:
-            intent['json'] = json.loads(intent['json'])
-            instance['intents'].append(intent)
-
-    return instances
-
-
-def find_instance_by_alias(*, client, alias):
-    instances = discover_service_instances(client=client)
-
-    for instance in instances:
-        if instance['alias'] == alias:
-            return instance['referenceUUID']
-
-    return None
+    instance = instances[0]
+    return instance['referenceUUID']
 
 
 def manifest_create(*, client, template, alias=None, si_uuid=None):

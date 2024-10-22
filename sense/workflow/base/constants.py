@@ -2,11 +2,16 @@ class Constants:
     PROVIDER_STATE = 'provider_state'
     LABELS = 'labels'
 
-    RES_TYPE = 'type'
+    RES_TYPE = 'res_type'
     CONFIG = 'config'
     RES_NAME_PREFIX = "name_prefix"
     CREDENTIAL_FILE = 'credential_file'
     PROFILE = "profile"
+
+    POOL = 'pool'
+    ADDR_TYPE = "addr_type"
+    NET_MASK = 'netmask'
+
     SENSE_EXTENSION = "sense"
     PROVIDER = 'provider'
     LABEL = 'label'
@@ -16,7 +21,8 @@ class Constants:
         "sense": "sense.workflow.sense.sense_provider.SenseProvider"
     }
 
-    CONFIG_SUPPORTED_TYPES = ['edit_template', 'manifest_template']
+    EDIT_TEMPLATE = 'edit_template'
+    CONFIG_SUPPORTED_TYPES = [EDIT_TEMPLATE, 'manifest_template']
     RES_TYPE_SERVICE = "service"
     RES_SUPPORTED_TYPES = [RES_TYPE_SERVICE]
     RES_RESTRICTED_TYPES = []

@@ -5,7 +5,6 @@ from typing import List, Dict, Union
 from sense.workflow.base.resource_models import Resource, Service
 from sense.workflow.base.state_models import ProviderState, ServiceState
 from sense.workflow.base.constants import Constants
-from sense.workflow.base.utils import load_yaml_from_file
 
 
 class Provider(ABC):
@@ -20,7 +19,6 @@ class Provider(ABC):
         self._services = list()
 
         self._pending = []
-        self._externally_depends_on_map: Dict[str, List[str]] = {}
 
         self._no_longer_pending = []
         self._failed = {}
@@ -29,8 +27,8 @@ class Provider(ABC):
         self.pending_internal = []
 
         self._saved_state: ProviderState = Union[ProviderState, None]
-        self._existing_map: Dict[str, List[str]] = {}
-        self._added_map: Union[Dict[str, List[str]], None] = None
+        self._existing_map: Dict[str, List[str]] = dict()
+        self._added_map: Union[Dict[str, List[str]], None] = dict()
 
     @property
     def existing_map(self) -> Dict[str, List[str]]:
@@ -52,7 +50,6 @@ class Provider(ABC):
 
     def set_saved_state(self, state: Union[ProviderState, None]):
         self._saved_state = state
-
 
     @property
     def services(self) -> List[Service]:
@@ -77,7 +74,6 @@ class Provider(ABC):
         assert self != source
         assert provider
         assert resource
-        pass
 
     def on_deleted(self, *, source, provider, resource: object):
         assert self != source
@@ -95,23 +91,18 @@ class Provider(ABC):
 
         if self == provider:
             self.creation_details[resource.label]["resources"].append(resource.name)
-            resource.set_externally_depends_on(self._externally_depends_on_map[resource.label])
         else:
             for pending_resource in self.pending.copy():
                 resolver = self.get_dependency_resolver()
                 label = pending_resource[Constants.LABEL]
                 resolver.resolve_dependency(resource=pending_resource, from_resource=resource)
-                ok = resolver.check_if_external_dependencies_are_resolved(resource=pending_resource)
+                ok = resolver.check_if_dependencies_are_resolved(resource=pending_resource)
 
                 if ok:
                     resolver.extract_values(resource=pending_resource)
                     self.pending.remove(pending_resource)
                     self.no_longer_pending.append(pending_resource)
                     self.logger.info(f"Removing {label} from pending using {self.label}")
-
-            for r in self.resources:
-                if r.label in resource.get_externally_depends_on():
-                    self.do_handle_externally_depends_on(resource=r, dependee=resource)
 
     def init(self):
         credential_file = self.config.get(Constants.CREDENTIAL_FILE)
@@ -125,8 +116,9 @@ class Provider(ABC):
         # self.config = load_yaml_from_file(credential_file)
         self.setup_environment()
 
+    @abstractmethod
     def supports_modify(self):
-        return False
+        pass
 
     def resource_name(self, resource: dict, idx: int = 0):
         return f"{self.name}_{resource[Constants.RES_NAME_PREFIX]}_{idx}"
@@ -142,15 +134,15 @@ class Provider(ABC):
                 resource_name = self.resource_name(resource, n)
                 self.existing_map[label].append(resource_name)
 
+                if label not in self.added_map:
+                    self.added_map[label] = []
+
     def _compute_added_map(self):
-        if self.added_map is None:
-            self._added_map = {}
+        for service in self.services:
+            if service.label not in self.added_map:
+                self.added_map[service.label] = []
 
-            for service in self.services:
-                if service.label not in self.added_map:
-                    self.added_map[service.label] = []
-
-                self.added_map[service.label].append(service.name)
+            self.added_map[service.label].append(service.name)
 
     @property
     def modified(self):
@@ -160,21 +152,8 @@ class Provider(ABC):
 
         return False
 
-    def retrieve_attribute_from_saved_state(self, resource, resource_name, attribute, defaultValue=None):
-        if self.saved_state:
-            for state in resource[Constants.SAVED_STATES]:
-                if state.attributes['name'] == resource_name:
-                    ret = state.attributes.get(attribute)
-
-                    if isinstance(ret, list) and len(ret) == 1:
-                        return ret[0]
-
-                    return ret
-        return defaultValue
-
     def validate_resource(self, *, resource: dict):
         label = resource.get(Constants.LABEL)
-
         self.creation_details[label] = dict()
         self.creation_details[label]['resources'] = list()
         self.creation_details[label]['config'] = resource[Constants.CONFIG]
@@ -183,6 +162,11 @@ class Provider(ABC):
         self.creation_details[label]['created_count'] = 0
         self.creation_details[label]['name_prefix'] = resource[Constants.RES_NAME_PREFIX]
         self.add_to_existing_map(resource)
+
+        creation_details = resource[Constants.RES_CREATION_DETAILS]
+
+        if not creation_details['in_config_file']:
+            return
 
         try:
             self.do_validate_resource(resource=resource)
@@ -196,12 +180,6 @@ class Provider(ABC):
         assert count > 0
         assert label not in self._added, f"{label} already in {self._added}"
 
-        if label not in self._externally_depends_on_map:
-            depends_on = self._externally_depends_on_map[label] = list()
-
-            for dependency in resource[Constants.EXTERNAL_DEPENDENCIES]:
-                depends_on.append(dependency.resource.label)
-
         if len(resource[Constants.EXTERNAL_DEPENDENCIES]) > len(resource[Constants.RESOLVED_EXTERNAL_DEPENDENCIES]):
             self.logger.info(f"Adding {label} to pending using {self.label}")
             assert resource not in self.pending, f"Did not expect {label} to be in pending list using {self.label}"
@@ -214,7 +192,7 @@ class Provider(ABC):
             for temp in self.resources:
                 resolver.resolve_dependency(resource=resource, from_resource=temp)
 
-            ok = resolver.check_if_external_dependencies_are_resolved(resource=resource)
+            ok = resolver.check_if_dependencies_are_resolved(resource=resource)
 
             if ok:
                 resolver.extract_values(resource=resource)
@@ -226,11 +204,14 @@ class Provider(ABC):
                 return
 
         try:
-            self.do_add_resource(resource=resource)
+            creation_details = resource[Constants.RES_CREATION_DETAILS]
+
+            if creation_details['in_config_file']:
+                self.do_add_resource(resource=resource)
+
             self._added.append(label)
         except Exception as e:
             label = resource.get(Constants.LABEL)
-
             self.failed[label] = 'ADD'
             failed_count = resource[Constants.RES_COUNT] - len(self.creation_details[label]['resources'])
             self.creation_details[label]['failed_count'] = failed_count
@@ -276,18 +257,18 @@ class Provider(ABC):
                                 f"Adding no longer pending internally {internal_dependency_label} failed using {e2}",
                                 exc_info=True)
 
-        if label in self._added:
-            self.logger.info(f"Create: {label} using {self.label}: {self._added}")
+        assert label in self._added
+        self.logger.info(f"Create: {label} using {self.label}: {self._added}")
 
-            try:
-                self.do_create_resource(resource=resource)
-            except (Exception, KeyboardInterrupt) as e:
-                self.failed[label] = 'CREATE'
-                failed_count = resource[Constants.RES_COUNT] - len(self.creation_details[label]['resources'])
-                self.creation_details[label]['failed_count'] = failed_count
-                raise e
-            finally:
-                self.creation_details[label]['created_count'] = len(self.creation_details[label]['resources'])
+        try:
+            self.do_create_resource(resource=resource)
+        except (Exception, KeyboardInterrupt) as e:
+            self.failed[label] = 'CREATE'
+            failed_count = resource[Constants.RES_COUNT] - len(self.creation_details[label]['resources'])
+            self.creation_details[label]['failed_count'] = failed_count
+            raise e
+        finally:
+            self.creation_details[label]['created_count'] = len(self.creation_details[label]['resources'])
 
     def wait_for_create_resource(self, *, resource: dict):
         label = resource.get(Constants.LABEL)
@@ -345,10 +326,8 @@ class Provider(ABC):
     def do_create_resource(self, *, resource: dict):
         pass
 
+    @abstractmethod
     def do_wait_for_create_resource(self, *, resource: dict):
-        pass
-
-    def do_handle_externally_depends_on(self, *, resource: Resource, dependee: Resource):
         pass
 
     @abstractmethod

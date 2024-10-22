@@ -1,7 +1,17 @@
+import json
 import logging
+from types import SimpleNamespace
 
-from sense.workflow.base.resource_models import ResolvedDependency, Resource
 from sense.workflow.base.constants import Constants
+from sense.workflow.base.resource_models import ResolvedDependency, Resource
+
+
+def cleanup_attrs(attrs):
+    attributes = attrs.copy()
+    attributes.pop('logger', None)
+    attributes.pop('label')
+    attributes = {k: v for k, v in attributes.items() if not k.startswith('_')}
+    return attributes
 
 
 class DependencyResolver:
@@ -16,7 +26,7 @@ class DependencyResolver:
             self.dependency_label = Constants.INTERNAL_DEPENDENCIES
             self.resolved_dependency_label = Constants.RESOLVED_INTERNAL_DEPENDENCIES
 
-    def check_if_external_dependencies_are_resolved(self, *, resource: dict):
+    def check_if_dependencies_are_resolved(self, *, resource: dict):
         label = resource[Constants.LABEL]
         self.logger.info(f"Checking if all dependencies are resolved for {label} using {self.label}")
 
@@ -56,13 +66,10 @@ class DependencyResolver:
                 try:
                     if not dependency.attribute:
                         value = from_resource
-                    elif "[" in dependency.attribute:
-                        idx1 = dependency.attribute.find("[")
-                        idx2 = dependency.attribute.find("]")
-                        value = from_resource_dict.get(dependency.attribute[0:idx1])
-                        value = value[int(dependency.attribute[idx1 + 1: idx2])]
                     else:
-                        value = from_resource_dict.get(dependency.attribute)
+                        attrs = json.loads(json.dumps(cleanup_attrs(from_resource_dict)),
+                                           object_hook=lambda dct: SimpleNamespace(**dct))
+                        value = eval("attrs." + dependency.attribute, {}, {'attrs': locals()['attrs']})
 
                     if value and isinstance(value, list):
                         value = tuple(value)

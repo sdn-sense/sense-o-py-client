@@ -27,8 +27,8 @@ class SenseService(Service):
         else:
             self.manifest_template: dict = manifest_template
 
-        self.id = ''
-        self.state = ''
+        self.id = str()
+        self.state = str()
         self.intents = list()
         self.manifest = dict()
 
@@ -37,38 +37,48 @@ class SenseService(Service):
 
         if not si_uuid:
             logger.debug(f"Creating {self.name}")
-            si_uuid, status = sense_utils.create_instance(
+            si_uuid = sense_utils.create_instance(
                 client=self._client,
                 alias=self.name,
                 profile=self.profile,
                 edit_template=self.edit_template)
-        else:
-            logger.debug(f"Found {self.name} {si_uuid}")
-            assert si_uuid
-            status = sense_utils.instance_get_status(client=self._client, si_uuid=si_uuid)
-            logger.info(f"Found existing {self.name} {si_uuid} with status={status}")
+
+        status = sense_utils.instance_get_status(client=self._client, si_uuid=si_uuid)
+        logger.info(f"Service instance: {self.name} {si_uuid} with status={status}")
+
+        self.id = si_uuid
+
+        if 'INIT' in status:
+            status = sense_utils.wait_for_instance_create(client=self._client, si_uuid=si_uuid)
 
         if 'FAILED' in status:
             raise SenseException(f"Found instance {si_uuid} with status={status}")
 
-        if 'CREATE - READY' not in status:
+        if 'CANCEL - READY' == status:
+            logger.info(f"Reprovisioning {self.name}")
+            sense_utils.instance_operate(action='reprovision', client=self._client, si_uuid=si_uuid)
+        elif 'CREATE - READY' not in status:
             logger.debug(f"Provisioning {self.name}")
-            status = sense_utils.instance_operate(client=self._client, si_uuid=si_uuid)
+            sense_utils.instance_operate(client=self._client, si_uuid=si_uuid)
 
-        if 'CREATE - READY' not in status:
-            raise Exception(f"Creation failed for {si_uuid} {status}")
+    def wait_for_create(self):
+        si_uuid = self.id
+        status = sense_utils.wait_for_instance_operate(client=self._client, si_uuid=si_uuid)
+
+        if status not in ['CREATE - READY', 'REINSTATE - READY']:
+            raise SenseException(f"Creation failed for {si_uuid} {status}")
 
         logger.debug(f"Retrieving details {self.name} {status}")
         instance_dict = sense_utils.service_instance_details(client=self._client, si_uuid=si_uuid)
 
         import json
 
-        logger.info(f"Retrieved details {self.name} {status}: \n{ json.dumps(instance_dict, indent=2)}")
+        logger.debug(f"Retrieved details {self.name} {status}: \n{ json.dumps(instance_dict, indent=2)}")
 
         for key in SERVICE_INSTANCE_KEYS:
             assert key in instance_dict
 
-        self.id = instance_dict['referenceUUID']
+        assert self.id == instance_dict['referenceUUID']
         self.state = instance_dict['state']
         self.intents = instance_dict['intents']
 
@@ -87,4 +97,13 @@ class SenseService(Service):
 
         if si_uuid:
             sense_utils.delete_instance(client=self._client, si_uuid=si_uuid)
+            logger.debug(f"Deleted {self.name} {si_uuid}")
+
+    def wait_for_delete(self):
+        si_uuid = sense_utils.find_instance_by_alias(client=self._client, alias=self.name)
+
+        logger.debug(f"Deleting {self.name} {si_uuid}")
+
+        if si_uuid:
+            sense_utils.wait_for_delete_instance(client=self._client, si_uuid=si_uuid)
             logger.debug(f"Deleted {self.name} {si_uuid}")

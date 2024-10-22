@@ -187,7 +187,7 @@ def dump_states(states, to_json: bool, summary: bool = False):
         for provider_state in states:
             for service_state in provider_state.service_states:
                 attributes = dict()
-                props = ['name', 'id', 'state', 'profile', 'manifest']
+                props = ['name', 'id', 'state', 'profile', 'manifest', 'address', 'hosts']
 
                 for prop in props:
                     if prop in service_state.attributes:
