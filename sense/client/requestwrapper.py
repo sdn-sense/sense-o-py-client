@@ -136,6 +136,17 @@ class RequestWrapper(ApiClient):
         """Request Wrapper for SENSE-0 API (GET, PUT, POST, DELETE)"""
         ret = self._requestwrap(call_type, api_path, **kwargs)
 
+        if 'content_type' in kwargs or 'accept_type' in kwargs:
+            if 'content_type' in kwargs:
+                content = kwargs['content_type']
+            else:
+                content = 'json'
+            if 'accept_type' in kwargs:
+                accept = kwargs['accept_type']
+            else:
+                accept = 'json'
+            self._setHeaders(content=content, accept=accept)
+
         if ret is not None and ret.status_code >= 400 and ret.headers.get("content-type") == "application/json":
             json = ret.json()
             error_message = str(json)
@@ -152,6 +163,8 @@ class RequestWrapper(ApiClient):
         try:
             if ret and self.config['headers'].get('Accept') == "application/json" and ret.headers.get("content-type") == "application/json":
                 return ret.json()
+            elif ret and self.config['headers'].get('Accept') == "application/xml" and ret.headers.get("content-type") == "application/xml":
+                return ret.text  # TODO: valudate XML in ret text
         except:
             pass
         return ret.text if ret.text is not None else ret

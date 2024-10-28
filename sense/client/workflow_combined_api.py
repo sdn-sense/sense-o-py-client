@@ -732,9 +732,12 @@ class WorkflowCombinedApi():
             return self.client.request('POST',
                                    f'/service/manifest/{params["si_uuid"]}',
                                    body_params=body,
-                                   query_params=query_params)
+                                   query_params=query_params,
+                                   content_type='xml')
         else:
             return self.client.request('POST',
                                    f'/service/manifest',
                                    body_params=body,
-                                   query_params=query_params)
+                                   query_params=query_params,
+                                   content_type='xml')
+
