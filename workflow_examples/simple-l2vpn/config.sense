@@ -1,0 +1,36 @@
+config:
+  - manifest_template:
+      - nrp_manifest_template:
+          terminals:
+            - port: "?host_port?"
+              ip: "?ipv4?"
+              tag: "?terminal_vlan?"
+              peer_port: "?peer_port?"
+              sparql: SELECT ?peer_port WHERE { ?terminal nml:isAlias ?peer_port. }
+              sparql-ext: SELECT DISTINCT ?terminal_vlan ?host_port ?ipv4 WHERE { ?host_port nml:hasBidirectionalPort ?peer_port.
+                        ?host_port a nml:BidirectionalPort. ?peer_port mrs:hasNetworkAddress ?ipv4na.
+                        ?ipv4na mrs:type "ipv4-address". ?ipv4na mrs:value ?ipv4.
+                        ?terminal nml:isAlias ?peer_port. ?terminal nml:hasLabel ?vlan.
+                        ?vlan nml:value ?terminal_vlan.
+                        }
+              required: 'false'
+      - nrp_manifest_template2:
+          terminals:
+            - port: "?vlanport?"
+              tag: "?vlantag?"
+              sparql: 'SELECT DISTINCT ?vlantag ?vlanport WHERE {
+                    ?swsvc mrs:providesSubnet ?subnet. ?subnet nml:hasBidirectionalPort ?vlanport.
+                    ?vlanport nml:hasLabel ?alabel. ?alabel nml:value ?vlantag.
+                    }'
+
+resource:
+  - service:
+      - serv1:
+          profile: Any-to-Any-L2VPN
+          # manifest_template: '{{ manifest_template.nrp_manifest_template }}'
+          manifest_template: '{{ manifest_template.nrp_manifest_template2 }}'
+          edit_template:
+              data.connections[0].terminals[0].uri: urn:ogf:network:maxgigapop.net:2013:ptxn-sense-v1.maxgigapop.net
+              data.connections[0].terminals[1].uri: urn:ogf:network:es.net:2013::star-cr6:2_1_c5_1:+
+              data.connections[0].bandwidth.capacity: 1000
+          count: 2
