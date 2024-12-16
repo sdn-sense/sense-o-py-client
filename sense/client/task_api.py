@@ -37,6 +37,26 @@ class TaskApi():
 
         return self.client.request('GET', f'/task/assigned/{kwargs["assigned"]}')
 
+    def get_tasks_agent_status(self, **kwargs):
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.get_tasks_agent_status_with_http_info(**kwargs)  # noqa: E501
+        else:
+            (data) = self.get_tasks_agent_status_with_http_info(**kwargs)  # noqa: E501
+            return data
+
+    def get_tasks_agent_status_with_http_info(self, **kwargs):
+        all_params = ['async_req', '_return_http_data_only', '_preload_content', '_request_timeout', 'assigned', 'status']
+        params = locals()
+        for key, val in params['kwargs'].items():
+            if key not in all_params:
+                raise TypeError("Got an unexpected keyword argument '%s'"
+                                " to method task_query" % key)
+            params[key] = val
+        del params['kwargs']
+
+        return self.client.request('GET', f'/task/assigned/{kwargs["assigned"]}/status/{kwargs["status"]}')
+
     def get_task(self, **kwargs):
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):

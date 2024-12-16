@@ -51,6 +51,8 @@ if __name__ == "__main__":
                             help="Removes a policy of a metadata record (requires --domain --name --policy)")
     operations.add_argument("-T", "--task-query", action="store_true",
                             help="Retrieve all assigned tasks (requires --assigned)")
+    operations.add_argument("--task-agent-status", action="store_true",
+                            help="Retrieve all assigned tasks by status (requires --assigned and --state)")
     operations.add_argument("--task-get", action="store_true",
                             help="Retrieve a specific task (requires --uuid)")
     operations.add_argument("--task-update", action="store_true",
@@ -460,6 +462,13 @@ if __name__ == "__main__":
             print(record)
         else:
             raise ValueError(f"Invalid task_query options: requires --assigned")
+    elif args.task_agent_status:
+        if args.assigned and args.state:
+            taskAPI = TaskApi()
+            record = taskAPI.get_tasks_agent_status(assigned=args.assigned[0], status=args.state[0])
+            print(record)
+        else:
+            raise ValueError(f"Invalid task_query options: requires --assigned and --state")
     elif args.task_get:
         if args.uuid:
             taskAPI = TaskApi()
@@ -480,7 +489,7 @@ if __name__ == "__main__":
             record = taskAPI.update_task(json.dumps(data), uuid=args.uuid[0], state=args.state[0])
             print(record)
         else:
-            raise ValueError(f"Invalid task_update options: requires --uuid and --status")
+            raise ValueError(f"Invalid task_update options: requires --uuid and --state")
     elif args.task_delete:
         if args.uuid:
             taskAPI = TaskApi()
