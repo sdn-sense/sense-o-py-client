@@ -77,6 +77,26 @@ class MetadataApi():
 
         return self.client.request('PUT', f'/meta/{kwargs["domain"]}/{kwargs["name"]}/update', body_params=data)
 
+    def delete_metadata(self, **kwargs):
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.delete_metadata_with_http_info(**kwargs)  # noqa: E501
+        else:
+            (data) = self.delete_metadata_with_http_info(**kwargs)  # noqa: E501
+            return data
+
+    def delete_metadata_with_http_info(self, **kwargs):
+        all_params = ['async_req', '_return_http_data_only', '_preload_content', '_request_timeout', 'domain', 'name']
+        params = locals()
+        for key, val in params['kwargs'].items():
+            if key not in all_params:
+                raise TypeError("Got an unexpected keyword argument '%s'"
+                                " to method profile_get" % key)
+            params[key] = val
+        del params['kwargs']
+
+        return self.client.request('DELETE', f'/meta/{kwargs["domain"]}/{kwargs["name"]}')
+
     def get_metadata_policies(self, **kwargs):
         kwargs['_return_http_data_only'] = True
         if kwargs.get('async_req'):
