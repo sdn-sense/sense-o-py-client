@@ -136,7 +136,7 @@ class RequestWrapper(ApiClient):
         """Request Wrapper for SENSE-0 API (GET, PUT, POST, DELETE)"""
         if 'content_type' in kwargs or 'accept_type' in kwargs:
             self._setHeaders(content=kwargs.get('content_type', 'json'), accept=kwargs.get('accept_type', 'json'))
-        
+
         ret = self._requestwrap(call_type, api_path, **kwargs)
 
         if ret is not None and ret.status_code >= 400 and ret.headers.get("content-type") == "application/json":
@@ -144,8 +144,9 @@ class RequestWrapper(ApiClient):
             error_message = str(json)
             if "exception" in json:
                 error_message = json.get("exception")
-            raise ValueError(
-                    f"Returned code {ret.status_code} with error '{error_message}'")
+            exc = ValueError(f"Returned code {ret.status_code} with error '{error_message}'")
+            exc.json = json
+            raise exc
 
         # If request headers and return headers are json, return json
         # In case of failure - return text. Reason for doing so is to
