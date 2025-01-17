@@ -215,7 +215,8 @@ if __name__ == "__main__":
         logger.info(f"service instance {workflowApi.si_uuid} - end of workflow")
         sys.exit()
     logger.divider()
-    # Step 6:  de-provision / cancel
+
+  # Step 6:  de-provision / cancel
     status = workflowApi.instance_get_status()
     if 'FAILED' in status:
         # 6a. need to force cancel
@@ -228,6 +229,7 @@ if __name__ == "__main__":
     status = workflowApi.instance_get_status()
     logger.success(f"canceled service instance in '{status}' status")
     logger.section_header("End of Workflow")
+
 
 
 
