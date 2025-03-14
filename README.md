@@ -1,6 +1,6 @@
 ## SENSE Orchestrator Python Client
 
-### Example /etc/sense-o-auth.yaml
+### Example ~/.sense-o-auth.yaml (or /etc/sense-o-auth.yaml)
 ```
 AUTH_ENDPOINT: https://dev1.virnao.com:8543/auth/realms/StackV/protocol/openid-connect/token
 # dev1
