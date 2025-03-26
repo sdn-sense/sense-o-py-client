@@ -30,7 +30,7 @@ class DebugApi:
     def submit_ping(self, **kwargs):
         """Submit a ping test to the SENSE-SiteRM API"""
         keys = ["hostname", "type", "sitename", "ip",
-                "packetsize", "interval", "interface", "time"]
+                "packetsize", "interval", "interface", "time", "onetime"]
         kwargs["type"] = "rapid-ping"  # Default to rapid-ping
         return self.__submit_call(keys, **kwargs)
 
