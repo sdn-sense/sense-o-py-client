@@ -22,15 +22,22 @@ config:
                     ?swsvc mrs:providesSubnet ?subnet. ?subnet nml:hasBidirectionalPort ?vlanport.
                     ?vlanport nml:hasLabel ?alabel. ?alabel nml:value ?vlantag.
                     }'
+  - edit_template:
+      - autogole_edit_template:
+          data.connections[0].terminals[0].uri: urn:ogf:network:maxgigapop.net:2013:ptxn-sense-v1.maxgigapop.net
+          data.connections[0].terminals[1].uri: urn:ogf:network:es.net:2013::star-cr6:2_1_c5_1:+
+          # data.connections[0].suggest_ip_range[0].start: '{{ service.pool1.hosts[0] }}'
+          # data.connections[0].suggest_ip_range[0].end: '{{ service.pool1.hosts[0] }}'
+          data.connections[0].bandwidth.capacity: 1000
 
 resource:
   - service:
-      - serv1:
-          profile: Any-to-Any-L2VPN
-          # manifest_template: '{{ manifest_template.nrp_manifest_template }}'
-          manifest_template: '{{ manifest_template.nrp_manifest_template2 }}'
-          edit_template:
-              data.connections[0].terminals[0].uri: urn:ogf:network:maxgigapop.net:2013:ptxn-sense-v1.maxgigapop.net
-              data.connections[0].terminals[1].uri: urn:ogf:network:es.net:2013::star-cr6:2_1_c5_1:+
-              data.connections[0].bandwidth.capacity: 1000
-          count: 2
+      - pool:
+          pool: AutoGOLE-IPv4-Test-Pool
+          addr_type: IPv4
+          batch: subnet
+          netmask: '/28'
+          count: 0
+      - l2vpn:
+          profile: AutoGOLE-L2VPN-to-AL2S_STAR
+          count: 1

@@ -1,0 +1,9 @@
+resource:
+  - service:
+      - test_pool:
+          pool: AutoGOLE-IPv4-Test-Pool
+          addr_type: IPv4
+          batch: subnet
+          netmask: '/30'
+          count: 1 
+

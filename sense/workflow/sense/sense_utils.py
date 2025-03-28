@@ -55,8 +55,13 @@ def create_instance(*, client, profile, alias, edit_template):
 
     options = []
 
+    from sense.workflow.provider.provider import Service
+    # TODO remove after fixing al2s
     for k, v in edit_template.items():
-        options.append({k: str(v)})
+        if isinstance(v, Service):
+            options.append({k: "sense-router-" + v.id})
+        else:
+            options.append({k: str(v)})
 
     if options:
         query = dict([("ask", "edit"), ("options", options)])
@@ -119,10 +124,11 @@ def wait_for_instance_operate(*, client, si_uuid):
     for attempt in range(SENSE_RETRY):
         try:
             status = workflow_api.instance_get_status(si_uuid=si_uuid)
-            logger.info(f"Waiting on CREATE/REINSTATE-READY: status={status}:attempt={attempt} out of {SENSE_RETRY}")
 
             if status in ['CREATE - READY', 'REINSTATE - READY']:
-                break
+                return status
+
+            logger.info(f"Waiting on CREATE/REINSTATE-READY: status={status}:attempt={attempt} out of {SENSE_RETRY}")
 
             if 'FAILED' in status:
                 break
@@ -137,8 +143,8 @@ def wait_for_instance_operate(*, client, si_uuid):
 
 
 def delete_instance(*, client, si_uuid):
-    import time
-    import random
+    # import time
+    # import random
 
     workflow_api = WorkflowCombinedApi(req_wrapper=client)
     status = workflow_api.instance_get_status(si_uuid=si_uuid)
@@ -162,15 +168,21 @@ def delete_instance(*, client, si_uuid):
         if 'CREATE' not in status and 'REINSTATE' not in status and 'MODIFY' not in status:
             raise ValueError(f"cannot cancel an instance in '{status}' status...")
 
-        time.sleep(random.randint(5, 30))
+        # TODO REVISIT THIS. time.sleep(random.randint(5, 30))
 
-        if 'READY' not in status:
-            workflow_api.instance_operate('cancel', si_uuid=si_uuid, async_req=True, force=True)
-        else:
-            workflow_api.instance_operate('cancel', si_uuid=si_uuid, async_req=True)
+        try:
+            if 'READY' not in status:
+                workflow_api.instance_operate('cancel', si_uuid=si_uuid, async_req=True, force=True)
+            else:
+                workflow_api.instance_operate('cancel', si_uuid=si_uuid, async_req=True)
+        except ValueError as ve:
+            status = workflow_api.instance_get_status(si_uuid=si_uuid)
+
+            if "CANCEL" not in status:
+                raise ve
 
 
-def wait_for_delete_instance(*, client, si_uuid):
+def wait_for_delete_instance(*, client, si_uuid, alias):
     import time
     import random
 
@@ -199,7 +211,7 @@ def wait_for_delete_instance(*, client, si_uuid):
         time.sleep(random.randint(30, 35))
 
         status = workflow_api.instance_get_status(si_uuid=si_uuid)
-        logger.info(f"Waiting on CANCEL-READY: status={status}:attempt={attempt} out of {SENSE_RETRY}")
+        logger.info(f"Waiting on CANCEL-READY for {alias}: status={status}:attempt={attempt} out of {SENSE_RETRY}")
 
         if 'CANCEL - READY' in status:  # This got triggered very quickly ...
             break
@@ -209,7 +221,7 @@ def wait_for_delete_instance(*, client, si_uuid):
 
     if 'CANCEL - READY' in status:
         logger.info(f"Deleting instance: {si_uuid}")
-        time.sleep(random.randint(5, 30))
+        # TODO REVISIT THIS. time.sleep(random.randint(5, 30))
         ret = workflow_api.instance_delete(si_uuid=si_uuid)
         logger.info(f"Deleted instance: {si_uuid}: ret={ret}")
     else:

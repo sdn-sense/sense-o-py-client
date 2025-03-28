@@ -289,7 +289,7 @@ class Provider(ABC):
     def delete_resource(self, *, resource: dict):
         try:
             self.do_delete_resource(resource=resource)
-        except Exception as e:
+        except (Exception, KeyboardInterrupt) as e:
             label = resource.get(Constants.LABEL)
 
             self.failed[label] = 'DELETE'

@@ -2,26 +2,17 @@ config:
   - manifest_template:
       - nrp_manifest_template:
           terminals:
-            - port: "?host_port?"
-              ip: "?ipv4?"
-              tag: "?terminal_vlan?"
-              peer_port: "?peer_port?"
-              sparql: SELECT ?peer_port WHERE { ?terminal nml:isAlias ?peer_port. }
-              sparql-ext: SELECT DISTINCT ?terminal_vlan ?host_port ?ipv4 WHERE { ?host_port nml:hasBidirectionalPort ?peer_port.
-                        ?host_port a nml:BidirectionalPort. ?peer_port mrs:hasNetworkAddress ?ipv4na.
-                        ?ipv4na mrs:type "ipv4-address". ?ipv4na mrs:value ?ipv4.
-                        ?terminal nml:isAlias ?peer_port. ?terminal nml:hasLabel ?vlan.
-                        ?vlan nml:value ?terminal_vlan.
-                        }
-              required: 'false'
-      - nrp_manifest_template2:
-          terminals:
-            - port: "?vlanport?"
-              tag: "?vlantag?"
-              sparql: 'SELECT DISTINCT ?vlantag ?vlanport WHERE {
-                    ?swsvc mrs:providesSubnet ?subnet. ?subnet nml:hasBidirectionalPort ?vlanport.
-                    ?vlanport nml:hasLabel ?alabel. ?alabel nml:value ?vlantag.
-                    }'
+            - required: 'false'
+              subnet: ?subnet?
+              sparql: 'SELECT ?subnet WHERE { ?subnet a mrs:SwitchingSubnet. FILTER REGEX(?subnet, "^urn") }
+              switching_ports:
+                - port: ?terminal?
+                  tag: ?terminal_vlan?
+                  bw: '?qos_type? : ?bw_available? ?bw_unit?'
+                  required: 'false'
+                  sparql: 'SELECT ?terminal ?terminal_vlan ?qos_type ?bw_available ?bw_unit WHERE {
+                          ?subnet nml:hasBidirectionalPort ?terminal. ?terminal nml:hasLabel ?vlan. ?vlan nml:value ?terminal_vlan.
+                          OPTIONAL {?terminal nml:hasService ?bw_svc. ?bw_svc mrs:type ?qos_type. ?bw_svc mrs:availableCapacity ?bw_available. ?bw_svc mrs:unit ?bw_unit.}}
 
 resource:
   - service:
@@ -33,20 +24,17 @@ resource:
           count: 1
       - serv1:
           profile: Any-to-Any-L2VPN-IPv4
-          # manifest_template: '{{ manifest_template.nrp_manifest_template }}'
-          manifest_template: '{{ manifest_template.nrp_manifest_template2 }}'
+          manifest_template: '{{ manifest_template.nrp_manifest_template }}'
           edit_template:
               data.connections[0].terminals[0].uri: urn:ogf:network:maxgigapop.net:2013:ptxn-sense-v1.maxgigapop.net
               data.connections[0].terminals[1].uri: urn:ogf:network:es.net:2013::star-cr6:2_1_c5_1:+
               data.connections[0].suggest_ip_range[0].start: '{{ service.pool1.hosts[0] }}'
-              # data.connections[0].suggest_ip_range[0].end: '{{ service.pool1.hosts[1] }}'
               data.connections[0].suggest_ip_range[0].end: '{{ service.pool1.hosts[0] }}'
               data.connections[0].bandwidth.capacity: 1000
           count: 1
       - serv2:
           profile: Any-to-Any-L2VPN-IPv4
-          # manifest_template: '{{ manifest_template.nrp_manifest_template }}'
-          manifest_template: '{{ manifest_template.nrp_manifest_template2 }}'
+          manifest_template: '{{ manifest_template.nrp_manifest_template }}'
           edit_template:
               data.connections[0].terminals[0].uri: urn:ogf:network:icair.org:2013:mren8700:esnet
               data.connections[0].terminals[1].uri: urn:ogf:network:starlight.org:2022:r740xd4.it.northwestern.edu 

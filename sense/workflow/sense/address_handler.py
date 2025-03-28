@@ -62,8 +62,6 @@ class AddressService(Service):
         except ValueError as ve:
             if "has no allocation matching" not in str(ve):
                 raise SenseException(ve)
-            else:
-                print("Coucou ...", self.label)
 
 
 class AddressHandler:
@@ -124,6 +122,7 @@ class AddressHandler:
                 if 'address' in saved_state.attributes and saved_state.attributes['address']:
                     serv.address = saved_state.attributes['address']
                     serv.hosts = saved_state.attributes.get('hosts')
+                    logger.info(f'Deleting resource {serv_name} using {serv.address}')
                     serv.free_address()
 
                 self.resource_listener.on_deleted(source=self.provider, provider=self.provider, resource=serv)
@@ -136,10 +135,11 @@ class AddressHandler:
                 if saved_state:
                     serv.address = saved_state.attributes['address']
                     serv.hosts = saved_state.attributes['hosts']
+                    logger.info(f"Resource: {serv.name} already exists:address={serv.address}")
                     continue
 
             if Constants.POOL not in resource:
-                continue
+                raise SenseException(f"should not happen. No pool ... {serv.name}")
 
             logger.info(f"Allocating resource: {serv.name}:{serv.address}")
             serv.allocate_address()
@@ -149,9 +149,9 @@ class AddressHandler:
         label = resource[Constants.LABEL]
 
         for serv in filter(lambda s: s.label == label, self.services):
-            logger.info(f"Resource has been created {serv.name}")
+            logger.debug(f'Resource {serv.name} has been created')
             self.resource_listener.on_created(source=self.provider, provider=self.provider, resource=serv)
-            logger.debug(f"Notified Resource has been created: {serv.name}")
+            logger.info(f'Notified Resource {serv.name} has been created')
 
     def delete_resource(self, *, resource: dict):
         assert Constants.POOL in resource
@@ -169,5 +169,6 @@ class AddressHandler:
         if saved_state:
             serv.address = saved_state.attributes['address']
 
+        logger.info(f'Deleting resource {serv_name} using {serv.address}')
         serv.free_address()
         self.resource_listener.on_deleted(source=self.provider, provider=self.provider, resource=serv)

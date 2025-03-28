@@ -1,3 +1,5 @@
+from typing import List
+
 from sense.workflow.base.config_models import DependencyInfo
 from sense.workflow.base.constants import Constants
 from sense.workflow.base.utils import get_logger
@@ -25,8 +27,8 @@ class ServiceHandler:
         return self.provider.resource_listener
 
     @property
-    def services(self):
-        services = []
+    def services(self) -> List[SenseService]:
+        services: List[SenseService] = list()
 
         for serv in self.provider.services:
             if isinstance(serv, SenseService):
@@ -45,9 +47,13 @@ class ServiceHandler:
 
         for idx in range(0, count):
             serv_name = self.provider.resource_name(resource, idx)
+            saved_state = next(filter(lambda s: s.attributes['name'] == serv_name, resource[Constants.SAVED_STATES]),
+                               dict())
             serv = SenseService(client=self.client, label=label, name=serv_name, profile=profile,
                                 edit_template=edit_template,
-                                manifest_template=manifest_template)
+                                manifest_template=manifest_template,
+                                saved_state=saved_state
+                                )
             self.provider.services.append(serv)
             self.resource_listener.on_added(source=self.provider, provider=self.provider, resource=serv)
 
@@ -75,18 +81,18 @@ class ServiceHandler:
         if Constants.PROFILE not in resource:
             return
 
-        edit_template = resource.get(Constants.EDIT_TEMPLATE, dict())
+        serv = next(filter(lambda s: s.label == label, self.services))
 
-        for k, v in edit_template.items():
+        for k, v in serv.edit_template.items():
             if isinstance(v, DependencyInfo):
                 values = get_values_for_dependency(resource=resource,
                                                    attribute=Constants.EDIT_TEMPLATE + "." + k)
-                edit_template[k] = values[0]
+                serv.edit_template[k] = values[0]
 
-        logger.info(f"{self.name}: Creating resource {label} ....")
+        logger.debug(f"{self.name}: Creating resource with label {label} ....")
 
         for serv in filter(lambda s: s.label == label, self.services):
-            logger.debug(f"Creating resource: {serv.name}")
+            logger.info(f"Creating resource: {serv.name}")
             serv.create()
 
     def wait_for_create_resource(self, *, resource: dict):

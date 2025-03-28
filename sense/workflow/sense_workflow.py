@@ -101,8 +101,10 @@ def manage_workflow(args):
         states = controller.get_states()
         services, pending, failed = utils.get_counters(states=states)
         workflow_failed = workflow_failed or pending or failed
-        # TODO handled count=0
-        # states = sutil.reconcile_states(states, args.session)
+
+        if workflow_failed:
+            states = sutil.reconcile_states(states, args.session)
+
         sutil.save_states(states, args.session)
         logger.info(f"services={services}, pending={pending}, failed={failed}")
         sys.exit(1 if workflow_failed else 0)
@@ -123,7 +125,6 @@ def manage_workflow(args):
             return
 
         config = WorkflowConfig.parse(dir_path=config_dir, var_dict=var_dict)
-
 
         try:
             controller = Controller(config=config)

@@ -222,8 +222,14 @@ class Parser:
               var_dict: Union[Dict, None] = None) -> Tuple[List[ProviderConfig], List[ResourceConfig]]:
 
         from .utils import load_as_ns_from_yaml
+        from yaml.scanner import ScannerError
 
-        ns_list = load_as_ns_from_yaml(dir_path=dir_path, content=content)
+        try:
+            ns_list = load_as_ns_from_yaml(dir_path=dir_path, content=content)
+        except ScannerError as se:
+            raise ParseConfigException(
+                f"Unable to parse workflow config. Ensure it is yaml compliant:{se}")
+
         variables = Parser.parse_variables(ns_list, var_dict)
 
         providers = Parser.parse_providers(ns_list)

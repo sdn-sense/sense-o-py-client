@@ -1,0 +1,30 @@
+config:
+  - manifest_template:
+      - nrp_manifest_template:
+          terminals:
+            - required: 'true'
+              sparql: SELECT ?subnet WHERE { ?subnet a mrs:SwitchingSubnet. } ORDER BY DESC(?subnet)
+              subnet_name: ?subnet?
+              switching_ports:
+                - bandwidth: '?qos_type? : ?bw_available? ?bw_unit?'
+                  host_port:
+                    - ip_address: ?ipv4?
+                      port_name: ?host_port?
+                      required: 'false'
+                      sparql: SELECT ?peer_port WHERE { ?terminal nml:isAlias ?peer_port. }
+                      sparql-ext: SELECT DISTINCT ?host_port ?ipv4 WHERE { ?host_port nml:hasBidirectionalPort ?peer_port. ?host_port a nml:BidirectionalPort. ?peer_port mrs:hasNetworkAddress  ?ipv4na. ?ipv4na mrs:type "ipv4-address". ?ipv4na mrs:value ?ipv4. }
+                      vlan_port: ?peer_port?
+                  port_name: ?terminal?
+                  required: 'true'
+                  sparql: SELECT ?terminal ?terminal_vlan ?qos_type ?bw_available ?bw_unit WHERE { ?subnet nml:hasBidirectionalPort ?terminal. ?terminal nml:hasLabel ?vlan. ?vlan nml:value ?terminal_vlan. OPTIONAL {?terminal nml:hasService ?bw_svc. ?bw_svc mrs:type ?qos_type. ?bw_svc mrs:availableCapacity ?bw_available. ?bw_svc mrs:unit ?bw_unit.} } ORDER BY DESC(?terminal)
+                  vlan_tag: ?terminal_vlan?
+resource:
+  - service:
+      - nrp:
+          profile: Any-to-Any-L2VPN
+          manifest_template: '{{ manifest_template.nrp_manifest_template }}'
+          edit_template:
+              data.connections[0].terminals[0].uri: urn:ogf:network:maxgigapop.net:2013:ptxn-sense-v1.maxgigapop.net
+              data.connections[0].terminals[1].uri: urn:ogf:network:es.net:2013::star-cr6:2_1_c5_1:+
+              data.connections[0].bandwidth.capacity: 1000
+          count: 2
