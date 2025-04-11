@@ -141,10 +141,7 @@ class RequestWrapper(ApiClient):
 
         if ret is not None and ret.status_code >= 400 and ret.headers.get("content-type") == "application/json":
             json = ret.json()
-            error_message = str(json)
-            if "exception" in json:
-                error_message = json.get("exception")
-            exc = ValueError(f"Returned code {ret.status_code} with error '{error_message}'")
+            exc = ValueError(f"Returned code {ret.status_code} with error {json.get('exception')}. Full json return: {str(json)}")
             exc.json = json
             raise exc
 
