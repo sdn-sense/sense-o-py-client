@@ -797,14 +797,12 @@ class WorkflowCombinedApi():
 
         kwargs['_return_http_data_only'] = True
 
-        # manfiest in json form; insert into XML body
-        body_xml = f'<serviceManifest> <serviceUUID></serviceUUID><jsonTemplate>{template}</jsonTemplate></serviceManifest>'
         if kwargs.get('async_req'):
             return self.instance_si_uuid_manifest_post_with_http_info(
-                body_xml, **kwargs)  # noqa: E501
+                template, **kwargs)  # noqa: E501
         else:
             (data) = self.instance_si_uuid_manifest_post_with_http_info(
-                body_xml, **kwargs)  # noqa: E501
+                template, **kwargs)  # noqa: E501
             return data
 
     def instance_si_uuid_manifest_post_with_http_info(self, body, **kwargs):
@@ -852,16 +850,15 @@ class WorkflowCombinedApi():
 
         # Authentication setting
         # auth_settings = ['oAuth2Keycloak']  # noqa: E501
-        self.client.config['headers']['Content-type'] = 'application/xml'
         path_params = {}
         if 'si_uuid' in params:
             path_params['siUUID'] = params['si_uuid']  # noqa: E501
             return self.client.request('POST',
-                                   f'/service/manifest/{params["si_uuid"]}',
+                                   f'/service/manifest/{params["si_uuid"]}/json',
                                    body_params=body,
-                                   query_params=query_params,
-                                   content_type='xml')
+                                   query_params=query_params,)
         else:
+            self.client.config['headers']['Content-type'] = 'application/xml'
             return self.client.request('POST',
                                    f'/service/manifest',
                                    body_params=body,

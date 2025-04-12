@@ -29,8 +29,8 @@ class TestManifestApi(unittest.TestCase):
     def test_manifest_create(self):
         #
         # TESTING: - /service/manifest/{siUUID}
-        template = loadJSON("requests/manifest-1.json")
-        self.client.si_uuid = "56be2b77-4e15-4f70-aee5-2f281f03581a"
+        template = loadJSON("requests/manifest-2.json")
+        self.client.si_uuid = "9d327176-1516-4061-a0d0-660ae866d141"
         res = self.client.manifest_create(json.dumps(template))
         print()
         print(res)
