@@ -114,7 +114,10 @@ class SenseService(Service):
         self.manifest = sense_utils.manifest_create(client=self._client,
                                                     si_uuid=si_uuid, template=self.manifest_template)
 
-        if 'terminals' in self.manifest:
+        logger.info(f"Retrieved manifest {self.name}: \n{json.dumps(self.manifest, indent=2)}")
+
+        if ('terminals' in self.manifest and 'connections' in self.intents[0]['json']['data']
+                and 'terminals' in self.intents[0]['json']['data']['connections'][0]):
             adjusted_terminals = list()
             uris = list()
 
@@ -123,14 +126,15 @@ class SenseService(Service):
 
             for uri in uris:
                 for terminal in self.manifest['terminals']:
-                    if terminal['port'].startswith(uri + ":"):
+                    if 'port' in terminal and terminal['port'].startswith(uri + ":"):
                         adjusted_terminals.append(terminal)
                         break
 
-            logger.info(f'adjusted terminals for {self.name} ....')
-            self.manifest['terminals'] = adjusted_terminals
-
-        logger.info(f"Retrieved manifest {self.name}: \n{json.dumps(self.manifest, indent=2)}")
+            if adjusted_terminals:
+                self.manifest['terminals'] = adjusted_terminals
+                logger.info(f"Adjusted terminals in manifest {self.name}: \n{json.dumps(self.manifest, indent=2)}")
+            else:
+                logger.warning(f"Could not adjust terminals in manifest for {self.name}")
 
     def delete(self):
         si_uuid = sense_utils.find_instance_by_alias(client=self._client, alias=self.name)

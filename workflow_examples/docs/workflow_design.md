@@ -48,6 +48,8 @@ A var-file consists of a set of key-value pairs and can be specified using the -
 A config consists of a <i>type</i>, a <i>label</i> and a dictionary specifying its attributes. The parsing process guarantees that the combination of the type and the label is unique. One can think of Configs as glorifed variables. 
 We have two types `edit_template` and `manifest_template` referred to by <i>service</i> resources.
 
+- Need not use configs. Edit and manifest templates can be specified inline.
+
 ### <a name="edit_template"></a>Edit Template
 
 In the example below, the sense service `fabric_l2vpn` refers to the `edit_template` fabric_l2vpn_edit_template.
@@ -66,12 +68,25 @@ resource:
 
 ```
 
+As mentioned above, the edit template can be specified inline. The same goes for the manifest template.
+
+```
+resource:
+  - service:
+      - fabric_l2vpn:
+          profile: FABRIC-L2-Net
+          edit_template:
+             data.connections[0].bandwidth.capacity: '{{ var.bandwidth }}'
+          count: '{{ var.count }}'
+
+```
+
 ### <a name="manifest_template"></a>Manifest
 
 In the example below, the sense service `fabric_l2vpn` refers to the `manifest_template` fabric_l2vpn_manifest_template.
 
-- Note: The manifest_template can be a string pointing to a json file. 
-- Note: The manifest_template file should use python variable strings so that other resources can refer to them. 
+- Note: The manifest_template can be a string pointing to a json/yaml file.
+- Note: The manifest_template file should use python variable strings so that other resources can refer to them using python expressions
 
 ```
 config:
@@ -134,8 +149,8 @@ resource:                                               # Class
  
 # <a name="dependencies"></a>Dependencies
 A resource can refer to other resources that it depends on. In the example below, we have two dependencies: 
-- The sense services `serv1` and `serv2` depend on `pool1`. 
-- The sense services `serv2` depends on `serv1`
+- The sense services `serv1` and `serv2` deponds on `pool1`.
+- The sense services `serv2` deponds on `serv1`
 - During the `-apply` phase, the resources would get created in this order [pool1, serv1, serv2]
 - During the `-destroy` phase, the order is reversed. 
 

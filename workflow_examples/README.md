@@ -9,9 +9,23 @@ The Sense Workflow tool allows users to deploy and compose sense services by usi
 
 - For more details, refer to [sense workflow design document](./docs/workflow_design.md)
 - Many sample workflow definitions can be found under this directory. 
-- For a quick start, see [getting_started_example.ipynb](./notebooks/getting_started_example.ipynb)
+- For a quick start, you can use the notebook [getting_started_example.ipynb](./notebooks/getting_started_example.ipynb)
+- Or use these instructions to exercise the sample workflow under `workflow_examples/basic-stitching/any-to-any-l2vpn`.
 
-The example below show how to connect outputs of a resource to another resource. 
+```
+# Feel free to change the session name specified by the `-s switch option`
+>cd workflow_examples/basic-stitching/any-to-any-l2vpn
+>sense_workflow.py sessions -show   # show existing sessions.
+>sense_workflow.py workflow -s exp-any-to-any-l2vpn -validate
+>sense_workflow.py workflow -s exp-any-to-any-l2vpn -plan -summary
+>sense_workflow.py workflow -s exp-basic-any-to-any-l2vpn -apply  # create resources
+>sense_workflow.py workflow -s exp-basic-any-to-any-l2vpn -show -summary # show state
+>sense_workflow.py sessions -show
+>sense_workflow.py workflow -s exp-basic-any-to-any-l2vpn -destroy # destroy resources
+>sense_workflow.py sessions -show
+```
+
+The following snippet of the sample workflow shows how to connect outputs of a resource to another resource.
 
 - Note how service <i>serv1</i> and <i>serv2<i> use ip addresses from pool <i>pool1</i>
 - Note how service <i>serv2</i> uses the vlan tag from <i>serv1<i>'s second terminal. 
@@ -24,7 +38,6 @@ resource:
           addr_type: IPv4
           batch: subnet
           netmask: '/30'
-          count: 1
       - serv1:
           profile: Any-to-Any-L2VPN-IPv4
           manifest_template: '{{ manifest_template.nrp_manifest_template }}'
@@ -43,10 +56,9 @@ resource:
               data.connections[0].terminals[1].uri: urn:ogf:network:starlight.org:2022:r740xd4.it.northwestern.edu 
               data.connections[0].suggest_ip_range[0].start: '{{ service.pool1.hosts[1] }}'
               data.connections[0].suggest_ip_range[0].end: '{{ service.pool1.hosts[1] }}'
-              data.connections[0].terminals[0].vlan_tag: '{{ service.serv1.manifest.terminals[1].tag }}'
+              data.connections[0].terminals[0].vlan_tag: '{{ service.serv1.manifest.switching_subnets[1].switching_ports[1].tag }}'
               data.connections[0].bandwidth.capacity: 1000
-          count: 0
-
+          count: 1
 ```
 
 # <a name="install"></a>Installation

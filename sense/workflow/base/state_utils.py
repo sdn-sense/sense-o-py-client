@@ -294,29 +294,33 @@ def save_states(states: List[ProviderState], friendly_name: str):
 
 
 def reconcile_state(provider_state: ProviderState, saved_provider_state: ProviderState):
+    assert provider_state.number_of_created_resources() != provider_state.number_of_total_resources()
+
     creation_details = provider_state.creation_details
-    saved_creation_details = saved_provider_state.creation_details
-    saved_labels = [resource_state.label for resource_state in saved_provider_state.states()]
-
-    for resource_label in set(saved_labels):
-        saved_resource_details = saved_creation_details[resource_label]
-
-        if resource_label not in creation_details \
-                or creation_details[resource_label]['total_count'] < saved_resource_details['total_count'] \
-                or (creation_details[resource_label]['total_count'] == saved_resource_details['total_count']
-                    and creation_details[resource_label]['created_count'] < saved_resource_details['created_count']):
-            creation_details[resource_label] = saved_creation_details[resource_label]
 
     for resource_state in saved_provider_state.states():
+        resource_label = resource_state.label
+
+        if resource_label in creation_details:
+            resource_details = creation_details[resource_label]
+
+            if resource_details['total_count'] == resource_details['created_count']:
+                continue
+
         provider_state.add_if_not_found(resource_state)
 
 
 def reconcile_states(provider_states: List[ProviderState], friendly_name: str) -> List[ProviderState]:
     saved_states_map = load_states_as_dict(friendly_name)
+    if next(filter(lambda s: s.number_of_created_resources() > 0, saved_states_map.values()), None) is None:
+        return provider_states
+
     reconciled_states = []
 
     for provider_state in provider_states:
         if provider_state.label not in saved_states_map:
+            reconciled_states.append(provider_state)
+        elif provider_state.number_of_created_resources() == provider_state.number_of_total_resources():
             reconciled_states.append(provider_state)
         else:
             saved_provider_state = saved_states_map.get(provider_state.label)

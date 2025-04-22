@@ -1,10 +1,14 @@
+variable:
+  - bandwidth:
+      default: 2000
+
 config:
   - manifest_template:
-      - nrp_manifest_template:
-          terminals:
-            - required: 'false'
+      - dnc_manifest_template:
+          switching_subnets:
+            - required: 'true'
               subnet: ?subnet?
-              sparql: 'SELECT ?subnet WHERE { ?subnet a mrs:SwitchingSubnet. FILTER REGEX(?subnet, "^urn") }'
+              sparql: 'SELECT ?subnet WHERE { ?subnet a mrs:SwitchingSubnet. }'
               switching_ports:
                 - port: ?terminal?
                   tag: ?terminal_vlan?
@@ -21,25 +25,24 @@ resource:
           addr_type: IPv4
           batch: subnet
           netmask: '/30'
-          count: 1
       - serv1:
           profile: Any-to-Any-L2VPN-IPv4
-          manifest_template: '{{ manifest_template.nrp_manifest_template }}'
+          manifest_template: '{{ manifest_template.dnc_manifest_template }}'
           edit_template:
               data.connections[0].terminals[0].uri: urn:ogf:network:maxgigapop.net:2013:ptxn-sense-v1.maxgigapop.net
               data.connections[0].terminals[1].uri: urn:ogf:network:es.net:2013::star-cr6:2_1_c5_1:+
               data.connections[0].suggest_ip_range[0].start: '{{ service.pool1.hosts[0] }}'
               data.connections[0].suggest_ip_range[0].end: '{{ service.pool1.hosts[0] }}'
-              data.connections[0].bandwidth.capacity: 1000
+              data.connections[0].bandwidth.capacity: '{{ var.bandwidth }}' 
           count: 1
       - serv2:
           profile: Any-to-Any-L2VPN-IPv4
-          manifest_template: '{{ manifest_template.nrp_manifest_template }}'
+          manifest_template: '{{ manifest_template.dnc_manifest_template }}'
           edit_template:
               data.connections[0].terminals[0].uri: urn:ogf:network:icair.org:2013:mren8700:esnet
               data.connections[0].terminals[1].uri: urn:ogf:network:starlight.org:2022:r740xd4.it.northwestern.edu 
               data.connections[0].suggest_ip_range[0].start: '{{ service.pool1.hosts[1] }}'
               data.connections[0].suggest_ip_range[0].end: '{{ service.pool1.hosts[1] }}'
-              data.connections[0].terminals[0].vlan_tag: '{{ service.serv1.manifest.terminals[1].tag }}'
-              data.connections[0].bandwidth.capacity: 1000
-          count: 0
+              data.connections[0].terminals[0].vlan_tag: '{{ service.serv1.manifest.switching_subnets[1].switching_ports[1].tag }}'
+              data.connections[0].bandwidth.capacity: '{{ var.bandwidth }}' 
+          count: 1

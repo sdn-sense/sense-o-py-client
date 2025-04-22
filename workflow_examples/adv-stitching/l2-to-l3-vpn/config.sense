@@ -1,0 +1,23 @@
+variable:
+  - bandwidth:
+      default: 2000
+resource:
+  - service:
+      - l2vpn:
+          profile: AutoGOLE-L2VPN-to-FABRIC_LOSA
+          manifest_template: l2vpn-manifest.json
+          edit_template:
+            data.connections[0].bandwidth.capacity: '{{ var.bandwidth }}'
+          count: 1
+      - cloud_connect:
+          profile: CloudConnect-L3VPN
+          manifest_template: dx-connection-manifest-template.json
+          edit_template:
+            data.connections[0].terminals[0].vlan_tag: '{{ service.l2vpn.manifest.terminals[0].tag }}'
+          count: 1
+      - aws:
+          profile: FABRIC-AWS-DX-VGW
+          manifest_template: aws-manifest-template.json
+          edit_template:
+            data.gateways[0].connects[0].to_hosted_conn: '{{ service.cloud_connect.manifest.dx_connection.name }}'
+          count: 0  # SET THIS TO ONE IF DESIRED

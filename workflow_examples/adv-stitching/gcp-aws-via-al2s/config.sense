@@ -16,4 +16,4 @@ resource:
           manifest_template: aws-manifest-template.json
           edit_template:
               data.gateways[0].connects[0].to_hosted_conn: '{{ service.al2s.manifest.dx_connection.name }}'
-          count: 1
+          count: 0  # SET THIS TO ONE IF DESIRED

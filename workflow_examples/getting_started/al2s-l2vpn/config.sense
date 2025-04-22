@@ -1,3 +1,7 @@
+variable:
+  - count:
+      default: 1
+
 config:
   - manifest_template:
       - al2s_l2vpn_manifest_template:
@@ -15,4 +19,4 @@ resource:
       - al2s_l2vpn:
           profile: AL2S-L2VPN
           manifest_template: '{{ manifest_template.al2s_l2vpn_manifest_template }}'
-          count: 2 
+          count: '{{ var.count }}'
