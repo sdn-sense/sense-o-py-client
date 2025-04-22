@@ -148,8 +148,7 @@ def load_as_ns_from_yaml(*, dir_path=None, content=None):
             file_name = os.path.join(dir_path, config)
 
             with open(file_name, 'r') as stream:
-                loader = yaml.FullLoader
-                obj = yaml.load(stream, Loader=loader)
+                obj = yaml.safe_load(stream)
                 obj = json.loads(json.dumps(obj), object_hook=lambda dct: SimpleNamespace(**dct))
                 objs.append(obj)
     else:
@@ -167,7 +166,7 @@ def load_yaml_from_file(file_name):
     path = Path(file_name).expanduser().absolute()
 
     with open(str(path), 'r') as stream:
-        return yaml.load(stream, Loader=yaml.FullLoader)
+        return yaml.safe_load(stream)
 
 
 def load_vars(var_file):
@@ -178,7 +177,7 @@ def load_vars(var_file):
         raise Exception(f'The supplied var-file {var_file} is invalid')
 
     with open(var_file, 'r') as stream:
-        return yaml.load(stream, Loader=yaml.FullLoader)
+        return yaml.safe_load(stream)
 
 
 def get_base_dir(friendly_name):
@@ -254,21 +253,3 @@ def can_read_json(path: str):
     except Exception:
         return False
 
-
-# noinspection PyBroadException
-def is_private_key(private_key_file: str):
-    import paramiko
-
-    try:
-        paramiko.RSAKey.from_private_key_file(private_key_file)
-        return True
-    except Exception:
-        pass
-
-    try:
-        paramiko.ecdsakey.ECDSAKey.from_private_key_file(private_key_file)
-        return True
-    except Exception:
-        pass
-
-    return False

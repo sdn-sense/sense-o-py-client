@@ -51,7 +51,7 @@ class ServiceHandler:
                 manifest_template = json.load(fp)
         else:
             with open(manifest_template, 'r') as stream:
-                manifest_template = yaml.load(stream, Loader=yaml.FullLoader)
+                manifest_template = yaml.safe_load(stream)
 
         return manifest_template
 

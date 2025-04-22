@@ -113,7 +113,6 @@ class Provider(ABC):
         else:
             self.config = getConfig()
 
-        # self.config = load_yaml_from_file(credential_file)
         self.setup_environment()
 
     @abstractmethod
