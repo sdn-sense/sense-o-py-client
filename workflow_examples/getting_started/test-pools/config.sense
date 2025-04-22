@@ -5,5 +5,4 @@ resource:
           addr_type: IPv4
           batch: subnet
           netmask: '/30'
-          count: 1 
 

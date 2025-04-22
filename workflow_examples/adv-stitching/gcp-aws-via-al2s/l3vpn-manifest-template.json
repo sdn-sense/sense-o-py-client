@@ -1,4 +1,9 @@
 {
+  "dx_connection": {
+    "name": "?sn?",
+    "sparql": "SELECT ?sn  WHERE { ?tbl a mrs:RoutingTable. ?tbl nml:name ?sn. ?tbl mrs:hasRoute ?rt. ?rt mrs:routeTo ?to. ?to a nml:BidirectionalPort. ?to mrs:hasNetworkAttribute ?nt. ?nt mrs:value ?dx. }",
+    "required": "true"
+  },
   "terminals": [
     {
      "port": "?to?",

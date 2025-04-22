@@ -24,10 +24,14 @@ class SenseService(Service):
         else:
             self.edit_template: dict = edit_template
 
+        assert isinstance(self.edit_template, dict)
+
         if isinstance(manifest_template, Config):
             self.manifest_template: dict = manifest_template.attributes
         else:
             self.manifest_template: dict = manifest_template
+
+        assert isinstance(self.manifest_template, dict)
 
         self.id = str()
         self.state = str()
@@ -81,7 +85,7 @@ class SenseService(Service):
         si_uuid = self.id
         status = sense_utils.wait_for_instance_operate(client=self._client, si_uuid=si_uuid)
 
-        if status not in ['CREATE - READY', 'REINSTATE - READY']:
+        if status not in ['CREATE - READY', 'REINSTATE - READY', 'MODIFY - READY']:
             raise SenseException(f"Creation failed for {si_uuid} {status}")
 
         logger.debug(f"Retrieving details {self.name} {status}")
@@ -107,13 +111,6 @@ class SenseService(Service):
             logger.info(f"Using saved manifest {self.name}: \n{json.dumps(self.manifest, indent=2)}")
             return
 
-        if isinstance(self.manifest_template, str):
-            import json
-
-            with open(self.manifest_template, 'r') as fp:
-                self.manifest_template = json.load(fp)
-
-        assert isinstance(self.manifest_template, dict)
         self.manifest = sense_utils.manifest_create(client=self._client,
                                                     si_uuid=si_uuid, template=self.manifest_template)
 

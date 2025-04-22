@@ -7,6 +7,7 @@ class Constants:
     RES_NAME_PREFIX = "name_prefix"
     CREDENTIAL_FILE = 'credential_file'
     PROFILE = "profile"
+    CONFIG_DIR = "config_dir"
 
     POOL = 'pool'
     ADDR_TYPE = "addr_type"

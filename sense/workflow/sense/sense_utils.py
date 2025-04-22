@@ -55,13 +55,8 @@ def create_instance(*, client, profile, alias, edit_template):
 
     options = []
 
-    from sense.workflow.provider.provider import Service
-    # TODO remove after fixing al2s
     for k, v in edit_template.items():
-        if isinstance(v, Service):
-            options.append({k: "sense-router-" + v.id})
-        else:
-            options.append({k: str(v)})
+        options.append({k: str(v)})
 
     if options:
         query = dict([("ask", "edit"), ("options", options)])
@@ -125,10 +120,10 @@ def wait_for_instance_operate(*, client, si_uuid):
         try:
             status = workflow_api.instance_get_status(si_uuid=si_uuid)
 
-            if status in ['CREATE - READY', 'REINSTATE - READY']:
+            if status in ['CREATE - READY', 'REINSTATE - READY', 'MODIFY - READY']:
                 return status
 
-            logger.info(f"Waiting on CREATE/REINSTATE-READY: status={status}:attempt={attempt} out of {SENSE_RETRY}")
+            logger.info(f"Waiting on CREATE/REINSTATE/MODIFY-READY: status={status}:attempt={attempt} out of {SENSE_RETRY}")
 
             if 'FAILED' in status:
                 break

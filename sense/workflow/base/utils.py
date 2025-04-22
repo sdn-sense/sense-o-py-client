@@ -63,7 +63,7 @@ def get_log_level():
 
 def get_log_location():
     import os
-    return os.environ.get('SENSE_LOG_LOCATION', "./sense.log")
+    return os.environ.get('SENSE_LOG_LOCATION', "/tmp/sense.log")
 
 
 def get_formatter():

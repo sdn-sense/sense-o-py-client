@@ -38,7 +38,7 @@ def manage_workflow(args):
 
     if args.plan:
         config = WorkflowConfig.parse(dir_path=config_dir, var_dict=var_dict)
-        controller = Controller(config=config, )
+        controller = Controller(config=config)
         states = sutil.load_states(args.session)
         controller.init(session=args.session, provider_states=states)
         controller.plan(provider_states=states)

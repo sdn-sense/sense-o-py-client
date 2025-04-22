@@ -36,14 +36,36 @@ class ServiceHandler:
 
         return services
 
+    @staticmethod
+    def _load_manifest_template(config_dir, manifest_template) -> dict:
+        import json
+        from pathlib import Path
+        import os
+        import yaml
+
+        if not Path(manifest_template).is_absolute():
+            manifest_template = os.path.join(config_dir, manifest_template)
+
+        if manifest_template.endswith('.json'):
+            with open(manifest_template, 'r') as fp:
+                manifest_template = json.load(fp)
+        else:
+            with open(manifest_template, 'r') as stream:
+                manifest_template = yaml.load(stream, Loader=yaml.FullLoader)
+
+        return manifest_template
+
     def add_resource(self, *, resource: dict):
         assert Constants.PROFILE in resource
         label = resource[Constants.LABEL]
         profile = resource[Constants.PROFILE]
         assert profile, f"Must have a profile for {label}"
         edit_template = resource.get(Constants.EDIT_TEMPLATE, dict())
-        manifest_template = resource.get("manifest_template", dict())
         count = resource[Constants.RES_COUNT]
+        manifest_template = resource.get("manifest_template", dict())
+
+        if isinstance(manifest_template, str):
+            manifest_template = self._load_manifest_template(resource.get(Constants.CONFIG_DIR), manifest_template)
 
         for idx in range(0, count):
             serv_name = self.provider.resource_name(resource, idx)
@@ -120,9 +142,13 @@ class ServiceHandler:
         label = resource[Constants.LABEL]
         logger.info(f"Deleting resource: {label}")
         edit_template = resource.get("edit_template", dict())
-        manifest_template = resource.get("manifest_template", dict())
         profile = resource[Constants.PROFILE]
         count = resource[Constants.RES_COUNT]
+        manifest_template = resource.get("manifest_template", dict())
+
+        if isinstance(manifest_template, str):
+            manifest_template = self._load_manifest_template(resource.get(Constants.CONFIG_DIR), manifest_template)
+
         services = list()
 
         for idx in range(0, count):

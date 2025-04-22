@@ -1,0 +1,19 @@
+resource:
+  - service:
+      - gcp:
+          profile: "FABRIC GCP INTERCON - no VM"
+          # profile: FABRIC-GCP-INTERCON
+          manifest_template: gcp-manifest-template.json
+          count: 1
+      - al2s:
+          profile: aes-al2s-cloudconnect
+          manifest_template: l3vpn-manifest-template.json
+          edit_template:
+              data.connections[0].terminals[1].cloud_connect.account_id: '{{ service.gcp.manifest.gcp.pairing_key }}'
+          count: 1
+      - serv3:
+          profile: FABRIC-AWS-DX-VGW
+          manifest_template: aws-manifest-template.json
+          edit_template:
+              data.gateways[0].connects[0].to_hosted_conn: '{{ service.al2s.manifest.dx_connection.name }}'
+          count: 1

@@ -4,7 +4,7 @@ config:
           terminals:
             - required: 'false'
               subnet: ?subnet?
-              sparql: 'SELECT ?subnet WHERE { ?subnet a mrs:SwitchingSubnet. FILTER REGEX(?subnet, "^urn") }
+              sparql: 'SELECT ?subnet WHERE { ?subnet a mrs:SwitchingSubnet. FILTER REGEX(?subnet, "^urn") }'
               switching_ports:
                 - port: ?terminal?
                   tag: ?terminal_vlan?
@@ -12,7 +12,7 @@ config:
                   required: 'false'
                   sparql: 'SELECT ?terminal ?terminal_vlan ?qos_type ?bw_available ?bw_unit WHERE {
                           ?subnet nml:hasBidirectionalPort ?terminal. ?terminal nml:hasLabel ?vlan. ?vlan nml:value ?terminal_vlan.
-                          OPTIONAL {?terminal nml:hasService ?bw_svc. ?bw_svc mrs:type ?qos_type. ?bw_svc mrs:availableCapacity ?bw_available. ?bw_svc mrs:unit ?bw_unit.}}
+                          OPTIONAL {?terminal nml:hasService ?bw_svc. ?bw_svc mrs:type ?qos_type. ?bw_svc mrs:availableCapacity ?bw_available. ?bw_svc mrs:unit ?bw_unit.}}'
 
 resource:
   - service:
@@ -42,4 +42,4 @@ resource:
               data.connections[0].suggest_ip_range[0].end: '{{ service.pool1.hosts[1] }}'
               data.connections[0].terminals[0].vlan_tag: '{{ service.serv1.manifest.terminals[1].tag }}'
               data.connections[0].bandwidth.capacity: 1000
-          count: 1
+          count: 0
