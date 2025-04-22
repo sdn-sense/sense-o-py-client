@@ -35,9 +35,9 @@ class ApiClient():
             raise Exception(f"Failed to get token. Bad credentials? Error: {self.token['error_description']}")
         self._setHeaders()
 
-    def _setHeaders(self):
+    def _setHeaders(self, content='json', accept='json'):
         """Set Headers for API calls"""
-        self.config['headers'] = {'Content-type': 'application/json', 'Accept': 'application/json',
+        self.config['headers'] = {'Content-type': f'application/{content}', 'Accept': f'application/{accept}',
                                   'Authorization': 'Bearer ' + self.token['access_token']}
 
     def _refreshToken(self):

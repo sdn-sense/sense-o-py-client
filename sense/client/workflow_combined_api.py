@@ -551,6 +551,133 @@ class WorkflowCombinedApi():
 
         return self.client.request('GET', '/intent/instance/' + kwargs['si_uuid'])
 
+    def instance_archive(self, **kwargs):  # noqa: E501
+        """Archive a service instance  # noqa: E501
+
+        Archive the specified service instance.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.instance_archive(si_uuid, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str si_uuid: service instance UUID (required)
+        :return: None
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        if self.si_uuid:
+            kwargs['si_uuid'] = self.si_uuid
+        if not kwargs['si_uuid'] :
+            raise ValueError("Missing the required parameter `si_uuid`")
+
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.instance_si_uuid_archive_with_http_info(**kwargs)  # noqa: E501
+        else:
+            (data) = self.instance_si_uuid_archive_with_http_info(**kwargs)  # noqa: E501
+            return data
+
+    def instance_si_uuid_archive_with_http_info(self, **kwargs):  # noqa: E501
+        """Archive a service instance  # noqa: E501
+
+        Archives the specified service instance.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.instance_si_uuid_archive_with_http_info(si_uuid, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str si_uuid: service instance UUID (required)
+        :return: None
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        all_params = ['si_uuid']  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in params['kwargs'].items():
+            if key not in all_params:
+                raise TypeError("Got an unexpected keyword argument '%s'"
+                                " to method instance_si_uuid_archive" % key)
+            params[key] = val
+        del params['kwargs']
+        # verify the required parameter 'si_uuid' is set
+        if ('si_uuid' not in params or params['si_uuid'] is None):
+            raise ValueError(
+                "Missing the required parameter `si_uuid` when calling `instance_si_uuid_archive`"
+            )  # noqa: E501
+
+        return self.client.request('PUT', '/instance/' + kwargs['si_uuid'] + '/archive')
+
+    def instance_unarchive(self, **kwargs):  # noqa: E501
+        """UnArchive a service instance  # noqa: E501
+
+        UnArchive the specified service instance.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.instance_unarchive(si_uuid, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str si_uuid: service instance UUID (required)
+        :return: None
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        if self.si_uuid:
+            kwargs['si_uuid'] = self.si_uuid
+        if not kwargs['si_uuid'] :
+            raise ValueError("Missing the required parameter `si_uuid`")
+
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.instance_si_uuid_unarchive_with_http_info(**kwargs)  # noqa: E501
+        else:
+            (data) = self.instance_si_uuid_unarchive_with_http_info(**kwargs)  # noqa: E501
+            return data
+
+    def instance_si_uuid_unarchive_with_http_info(self, **kwargs):  # noqa: E501
+        """Archive a service instance  # noqa: E501
+
+        Archives the specified service instance.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.instance_si_uuid_delete_with_http_info(si_uuid, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str si_uuid: service instance UUID (required)
+        :return: None
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        all_params = ['si_uuid']  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in params['kwargs'].items():
+            if key not in all_params:
+                raise TypeError("Got an unexpected keyword argument '%s'"
+                                " to method instance_si_uuid_unarchive" % key)
+            params[key] = val
+        del params['kwargs']
+        # verify the required parameter 'si_uuid' is set
+        if ('si_uuid' not in params or params['si_uuid'] is None):
+            raise ValueError(
+                "Missing the required parameter `si_uuid` when calling `instance_si_uuid_unarchive`"
+            )  # noqa: E501
+
+        return self.client.request('PUT', '/instance/' + kwargs['si_uuid'] + '/unarchive')
+
     def profile_list(self, **kwargs):
         """Get skimmed profile data  # noqa: E501
 
@@ -670,14 +797,12 @@ class WorkflowCombinedApi():
 
         kwargs['_return_http_data_only'] = True
 
-        # manfiest in json form; insert into XML body
-        body_xml = f'<serviceManifest> <serviceUUID></serviceUUID><jsonTemplate>{template}</jsonTemplate></serviceManifest>'
         if kwargs.get('async_req'):
             return self.instance_si_uuid_manifest_post_with_http_info(
-                body_xml, **kwargs)  # noqa: E501
+                template, **kwargs)  # noqa: E501
         else:
             (data) = self.instance_si_uuid_manifest_post_with_http_info(
-                body_xml, **kwargs)  # noqa: E501
+                template, **kwargs)  # noqa: E501
             return data
 
     def instance_si_uuid_manifest_post_with_http_info(self, body, **kwargs):
@@ -725,16 +850,18 @@ class WorkflowCombinedApi():
 
         # Authentication setting
         # auth_settings = ['oAuth2Keycloak']  # noqa: E501
-        self.client.config['headers']['Content-type'] = 'application/xml'
         path_params = {}
         if 'si_uuid' in params:
             path_params['siUUID'] = params['si_uuid']  # noqa: E501
             return self.client.request('POST',
-                                   f'/service/manifest/{params["si_uuid"]}',
+                                   f'/service/manifest/{params["si_uuid"]}/json',
                                    body_params=body,
-                                   query_params=query_params)
+                                   query_params=query_params,)
         else:
+            self.client.config['headers']['Content-type'] = 'application/xml'
             return self.client.request('POST',
                                    f'/service/manifest',
                                    body_params=body,
-                                   query_params=query_params)
+                                   query_params=query_params,
+                                   content_type='xml')
+

@@ -1,0 +1,40 @@
+{
+  "Switching Cross-Connects (Subnet VLANs)": [
+    {
+      "Switching Subnets": [
+        {
+          "Subnet Name": "?subnet?",
+          "Switching Ports": [
+            {
+              "Port Name": "?terminal?",
+              "Vlan Tag": "?terminal_vlan?",
+              "Bandwidth": "?qos_type? : ?bw_available? ?bw_unit?",
+              "sparql": "SELECT ?terminal ?terminal_vlan ?qos_type ?bw_available ?bw_unit WHERE { ?subnet nml:hasBidirectionalPort ?terminal. ?terminal nml:hasLabel ?vlan. ?vlan nml:value ?terminal_vlan. OPTIONAL {?terminal nml:hasService ?bw_svc. ?bw_svc mrs:type ?qos_type. ?bw_svc mrs:availableCapacity ?bw_available. ?bw_svc mrs:unit ?bw_unit.} }",
+              "required": "true",
+              "Host Port": [
+                {
+                  "Port Name": "?host_port?",
+                  "Vlan Port": "?peer_port?",
+                  "IP Address": "?ipv4?",
+                  "sparql": "SELECT ?peer_port WHERE { ?terminal nml:isAlias ?peer_port. }",
+                  "sparql-ext": "SELECT DISTINCT ?host_port ?ipv4 WHERE { ?host_port nml:hasBidirectionalPort ?peer_port. ?host_port a nml:BidirectionalPort. ?peer_port mrs:hasNetworkAddress  ?ipv4na. ?ipv4na mrs:type \"ipv4-address\". ?ipv4na mrs:value ?ipv4. }",
+                  "required": "false"
+                }
+              ]
+            }
+          ],
+          "Time Schedule": [
+            {
+              "Start": "?start?",
+              "End": "?end?",
+              "sparql": "SELECT ?start ?end WHERE { ?subnet nml:existsDuring ?lifetime. ?lifetime nml:start ?start. ?lifetime nml:end ?end. }",
+              "required": "false"
+            }
+          ],
+          "sparql": "SELECT ?subnet WHERE { ?subnet a mrs:SwitchingSubnet. }",
+          "required": "true"
+        }
+      ]
+    }
+  ]
+}

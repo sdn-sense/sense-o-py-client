@@ -6,6 +6,7 @@ import json
 
 from sense.client.address_api import AddressApi
 from sense.client.metadata_api import MetadataApi
+from sense.client.task_api import TaskApi
 from sense.client.workflow_combined_api import WorkflowCombinedApi
 from sense.client.profile_api import ProfileApi
 from sense.client.discover_api import DiscoverApi
@@ -48,6 +49,16 @@ if __name__ == "__main__":
                             help="Updates a policy of a metadata record (requires --domain --name --file)")
     operations.add_argument("--metapolicy-delete", action="store_true",
                             help="Removes a policy of a metadata record (requires --domain --name --policy)")
+    operations.add_argument("-T", "--task-query", action="store_true",
+                            help="Retrieve all assigned tasks (requires --assigned)")
+    operations.add_argument("--task-agent-status", action="store_true",
+                            help="Retrieve all assigned tasks by status (requires --assigned and --state)")
+    operations.add_argument("--task-get", action="store_true",
+                            help="Retrieve a specific task (requires --uuid)")
+    operations.add_argument("--task-update", action="store_true",
+                            help="Update a task status (requires --uuid --status). Can add an optional status JSON using --file.")
+    operations.add_argument("--task-delete", action="store_true",
+                            help="Remove a task (requires --uuid)")
     parser.add_argument("-f", "--file", action="append",
                         help="service intent request file")
     parser.add_argument("-u", "--uuid", action="append",
@@ -60,6 +71,10 @@ if __name__ == "__main__":
                         help="metadata policy name")
     parser.add_argument("--discover", action="append",
                         help="discover information via model query")
+    parser.add_argument("--assigned", action="append",
+                        help="assigned principal")
+    parser.add_argument("--state", action="append",
+                        help="optional status parameter")
     parser.add_argument("--address", action="append",
                         help="address (ipv4, ipv6, mac, id) allocate, free and affiliate")
     parser.add_argument("--intent", action="append",
@@ -437,6 +452,48 @@ if __name__ == "__main__":
         if args.domain and args.name and args.policy:
             metadataAPI = MetadataApi()
             record = metadataAPI.delete_metadata_policy(domain=args.domain[0], name=args.name[0], policy=args.policy[0])
+            print(record)
+        else:
+            raise ValueError(f"Invalid metapolicy-delete options: requires --domain and --name and --policy")
+    elif args.task_query:
+        if args.assigned:
+            taskAPI = TaskApi()
+            record = taskAPI.get_tasks(assigned=args.assigned[0])
+            print(record)
+        else:
+            raise ValueError(f"Invalid task_query options: requires --assigned")
+    elif args.task_agent_status:
+        if args.assigned and args.state:
+            taskAPI = TaskApi()
+            record = taskAPI.get_tasks_agent_status(assigned=args.assigned[0], status=args.state[0])
+            print(record)
+        else:
+            raise ValueError(f"Invalid task_query options: requires --assigned and --state")
+    elif args.task_get:
+        if args.uuid:
+            taskAPI = TaskApi()
+            record = taskAPI.get_task(uuid=args.uuid[0])
+            print(record)
+        else:
+            raise ValueError(f"Invalid task_get options: requires --uuid")
+    elif args.task_update:
+        if args.uuid and args.state:
+            taskAPI = TaskApi()
+            if args.file:
+                if not os.path.isfile(args.file[0]):
+                    raise Exception('data file not found: %s' % args.file[0])
+                template_file = open(args.file[0])
+                data = json.load(template_file)
+            else:
+                data = None
+            record = taskAPI.update_task(json.dumps(data), uuid=args.uuid[0], state=args.state[0])
+            print(record)
+        else:
+            raise ValueError(f"Invalid task_update options: requires --uuid and --state")
+    elif args.task_delete:
+        if args.uuid:
+            taskAPI = TaskApi()
+            record = taskAPI.delete_task(uuid=args.uuid[0])
             print(record)
         else:
             raise ValueError(f"Invalid metapolicy-delete options: requires --domain and --name and --policy")

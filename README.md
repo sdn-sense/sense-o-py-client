@@ -1,12 +1,10 @@
 ## SENSE Orchestrator Python Client
 
-### Example /etc/sense-o-auth.yaml
+### Template for ~/.sense-o-auth.yaml (or /etc/sense-o-auth.yaml)
 ```
-AUTH_ENDPOINT: https://dev1.virnao.com:8543/auth/realms/StackV/protocol/openid-connect/token
-# dev1
-API_ENDPOINT: https://dev1.virnao.com:8443/StackV-web/restapi
-# localhost
-#API_ENDPOINT: https://localhost:8443/StackV-web/restapi
+AUTH_ENDPOINT: https://sense-o.es.net:8543/auth/realms/StackV/protocol/openid-connect/token
+API_ENDPOINT: https://sense-o.es.net:8443/StackV-web/restapi
+# API_ENDPOINT: https://localhost:8443/StackV-web/restapi -- for local test env
 CLIENT_ID: StackV
 USERNAME: some username
 PASSWORD: some passpass

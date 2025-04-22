@@ -609,5 +609,4 @@ class WorkflowPhasedApi(object):
             raise ValueError(
                 "Missing the required parameter `si_uuid` when calling `instance_si_uuid_verify_get`"
             )  # noqa: E501
-
-        return self.client.request('GET', f'/instance/{kwargs["si_uuid"]}/verify')
+        return self.client.request('GET', f'/verification/{kwargs["si_uuid"]}')
