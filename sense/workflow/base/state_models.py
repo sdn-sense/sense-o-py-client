@@ -209,14 +209,14 @@ def named_tuple(self, data):
     return self.represent_list(data)
 
 
-def get_loader():
+def init_loader():
     loader = yaml.SafeLoader
-    loader.add_constructor("!ProviderState", provider_constructor)
-    loader.add_constructor("!ServiceState", service_constructor)
-    loader.add_constructor("!ResourceConfig", resource_config_constructor)
-    loader.add_constructor("!ProviderConfig", provider_config_constructor)
-    loader.add_constructor("!BaseConfig", base_config_constructor)
-    loader.add_constructor("!Config", config_constructor)
+    yaml.add_constructor("!ProviderState", provider_constructor, Loader=loader)
+    yaml.add_constructor("!ServiceState", service_constructor, Loader=loader)
+    yaml.add_constructor("!ResourceConfig", resource_config_constructor, Loader=loader)
+    yaml.add_constructor("!ProviderConfig", provider_config_constructor, Loader=loader)
+    yaml.add_constructor("!BaseConfig", base_config_constructor, Loader=loader)
+    yaml.add_constructor("!Config", config_constructor, Loader=loader)
     return loader
 
 

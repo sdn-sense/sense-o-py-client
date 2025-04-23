@@ -53,7 +53,7 @@ Dependency = namedtuple("Dependency", "key resource attribute is_external")
 
 
 class ResourceConfig(BaseConfig):
-    def __init__(self, type: str, name: str, attrs:  Dict, provider: ProviderConfig):
+    def __init__(self, type: str, name: str, attrs: Dict, provider: ProviderConfig):
         super().__init__(type, name, attrs)
         assert provider, f"provider is required for {name}"
         assert isinstance(provider, ProviderConfig), f"expected ProviderConfig for {name}"

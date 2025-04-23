@@ -71,8 +71,8 @@ class SenseService(Service):
             try:
                 sense_utils.delete_instance(client=self._client, si_uuid=self.id)
                 sense_utils.wait_for_delete_instance(client=self._client, si_uuid=self.id, alias=self.name)
-            except:
-                raise SenseException(f"Found instance {self.id} with status={status}")
+            except Exception as e:
+                raise SenseException(f"Got exception while deleting instance {self.id} with status={status}:{e}")
 
         if 'CANCEL - READY' == status:
             logger.info(f"Reprovisioning {self.name}")

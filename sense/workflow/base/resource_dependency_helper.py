@@ -52,7 +52,7 @@ class ResourceDependencyEvaluator:
         return self.dependency_map
 
 
-def order_resources(dependency_map:  Dict[ResourceConfig, Set[ResourceConfig]]) -> List[ResourceConfig]:
+def order_resources(dependency_map: Dict[ResourceConfig, Set[ResourceConfig]]) -> List[ResourceConfig]:
     ordered_resources: List[ResourceConfig] = []
     while len(dependency_map) > 0:
         found = None

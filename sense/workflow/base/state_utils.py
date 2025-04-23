@@ -7,7 +7,7 @@ import yaml
 
 from .exceptions import StateException
 from .state_models import ProviderState
-from .state_models import get_dumper, get_loader
+from .state_models import get_dumper
 from .utils import get_base_dir
 
 
@@ -221,7 +221,7 @@ def load_meta_data(friendly_name: str, attr=None):
     if os.path.exists(file_path):
         with open(file_path, 'r') as stream:
             try:
-                ret = yaml.load(stream, Loader=get_loader())
+                ret = yaml.safe_load(stream)
 
                 if ret is not None:
                     return ret.get(attr) if attr else ret
@@ -240,7 +240,9 @@ def load_states(friendly_name) -> List[ProviderState]:
     if os.path.exists(file_path):
         with open(file_path, 'r') as stream:
             try:
-                ret = yaml.load(stream, Loader=get_loader())
+                from .state_models import init_loader
+                init_loader()
+                ret = yaml.safe_load(stream)
 
                 if ret is not None:
                     return ret
@@ -249,7 +251,7 @@ def load_states(friendly_name) -> List[ProviderState]:
 
                 raise StateException(f'Exception while loading state at {file_path}:{e}')
 
-    return []
+    return list()
 
 
 def load_states_as_dict(friendly_name) -> Dict[str, ProviderState]:
