@@ -858,10 +858,11 @@ class WorkflowCombinedApi():
                                    body_params=body,
                                    query_params=query_params,)
         else:
+            body_xml = f'<serviceManifest> <serviceUUID></serviceUUID><jsonTemplate>{body}</jsonTemplate></serviceManifest>'
             self.client.config['headers']['Content-type'] = 'application/xml'
             return self.client.request('POST',
                                    f'/service/manifest',
-                                   body_params=body,
+                                   body_params=body_xml,
                                    query_params=query_params,
                                    content_type='xml')
 
