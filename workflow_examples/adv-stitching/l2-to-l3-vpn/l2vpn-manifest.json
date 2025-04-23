@@ -1,0 +1,13 @@
+{
+  "terminals": [
+    {
+      "required": "false",
+      "subnet": "?subnet?",
+      "port": "?terminal?",
+      "tag": "?terminal_vlan?",
+      "bw": "?bw_available?",
+      "bw_details": "?qos_type? : ?bw_available? ?bw_unit?",
+      "sparql": "SELECT ?subnet ?terminal ?terminal_vlan ?qos_type ?bw_available ?bw_unit WHERE { ?subnet a mrs:SwitchingSubnet. ?subnet nml:hasBidirectionalPort ?terminal. ?terminal nml:hasLabel ?vlan. ?vlan nml:value ?terminal_vlan. OPTIONAL {?terminal nml:hasService ?bw_svc. ?bw_svc mrs:type ?qos_type. ?bw_svc mrs:availableCapacity ?bw_available. ?bw_svc mrs:unit ?bw_unit.}}"
+    }
+  ]
+}

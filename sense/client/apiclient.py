@@ -11,9 +11,9 @@ requests.packages.urllib3.disable_warnings()
 @classwrapper
 class ApiClient():
     """API Client for SENSE-0 get Token and Config"""
-    def __init__(self):
+    def __init__(self, config):
         # For now only pass config file; Later all params
-        self.config = getConfig()
+        self.config = config or getConfig()
         self._validateConfig()
         self._setDefaults()
         self.token = None

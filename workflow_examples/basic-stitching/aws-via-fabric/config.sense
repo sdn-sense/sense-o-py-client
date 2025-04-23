@@ -1,0 +1,13 @@
+resource:
+  - service:
+      - cloud_connect:
+          profile: CloudConnect-L3VPN
+          manifest_template: dx-connection-manifest-template.json
+          edit_template:
+              data.connections[0].terminals[0].uri: urn:ogf:network:stack-fabric:2024:topology:node+STAR:port+ESnet-StarLight
+              data.connections[0].terminals[1].uri: urn:ogf:network:stack-fabric:2024:topology:node+AWS:port+Cloud-Facility-AWS_agg3.ashb_TenGigE0-0-0-0-3_us-east-1
+      - vgw:
+          profile: FABRIC-AWS-DX-VGW
+          manifest_template: aws-manifest-template.json
+          edit_template:
+              data.gateways[0].connects[0].to_hosted_conn: '{{ service.cloud_connect.manifest.dx_connection.name }}'

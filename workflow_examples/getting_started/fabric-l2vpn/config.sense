@@ -1,0 +1,32 @@
+variable:
+  - bandwidth:
+      default: 2000
+  - count:
+      default: 1
+
+config:
+  - edit_template:
+      - fabric_l2vpn_edit_template:
+          data.connections[0].bandwidth.capacity: '{{ var.bandwidth }}'
+  - manifest_template:
+      - fabric_l2vpn_manifest_template:
+          terminals:
+            - id: "?slice_id?"
+              port: "?vlanport?"
+              vlan: "?vlantag?"
+              name: "?slice_name?"
+              bw: ?bw?
+              sparql: 'SELECT DISTINCT ?bw ?slice_name ?slice_id ?vlantag ?vlanport WHERE {
+                    ?swsvc mrs:providesSubnet ?subnet. ?subnet nml:hasBidirectionalPort ?vlanport.
+                    ?subnet nml:name ?slice_name.
+                    ?subnet mrs:hasNetworkAddress ?na_slice_id. ?na_slice_id mrs:type "slice-id".
+                    ?na_slice_id mrs:value ?slice_id. ?vlanport nml:hasLabel ?alabel. ?alabel nml:value ?vlantag.
+                    ?terminal nml:hasService ?bw_svc. ?bw_svc mrs:type ?qos_type. ?bw_svc mrs:maximumCapacity ?bw. ?bw_svc mrs:unit ?bw_unit.
+                    }'
+resource:
+  - service:
+      - fabric_l2vpn:
+          profile: FABRIC-L2-Net 
+          edit_template: '{{ edit_template.fabric_l2vpn_edit_template }}'
+          manifest_template: '{{ manifest_template.fabric_l2vpn_manifest_template }}'
+          count: '{{ var.count }}'

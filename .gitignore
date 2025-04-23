@@ -3,6 +3,7 @@ __pycache__
 .idea
 .pytest_cache
 venv/
+*.log
 .eggs
 *egg-info/
 build/

@@ -1,0 +1,18 @@
+{
+ "nodes": [
+    {
+      "name": "?vm_name?",
+      "public_ip": "?vm_public_ip?",
+      "private_ip": "?vm_private_ip?",
+      "keypair": "?vm_keyname?",
+      "image": "?vm_image?",
+      "sparql": "SELECT DISTINCT ?vm_name ?vm_public_ip ?vm_private_ip ?vm_keyname ?vm_image WHERE {?ec2 mrs:providesVM ?vm. ?vpc nml:hasNode ?vm. ?vm nml:name ?vm_name. ?vm mrs:hasNetworkAddress ?vm_public_na.?vm_public_na mrs:type \"ipv4:public\".  ?vm_public_na mrs:value ?vm_public_ip.  ?vm nml:hasBidirectionalPort ?vm_eth. ?vm_eth mrs:hasNetworkAddress ?vm_private_na. ?vm_private_na mrs:type \"ipv4:private\". ?vm_private_na mrs:value ?vm_private_ip. OPTIONAL{ ?vm mrs:type ?vm_keyname. FILTER (regex(?vm_keyname,'^keypair.+$'))} OPTIONAL{ ?vm mrs:type ?vm_image. FILTER (regex(?vm_image,'^image.+$'))}}",
+      "required": "false"
+    }
+  ],
+  "gcp": {
+    "pairing_key": "?pk?",
+    "sparql": "SELECT ?pk WHERE {?vpc nml:hasBidirectionalPort ?vpngw. ?vpngw nml:isAlias ?attach. ?attach mrs:hasNetworkAddress ?pk_na. ?pk_na mrs:type \"pairing-key\". ?pk_na mrs:value ?pk.}",
+     "required": "true"
+  }
+}

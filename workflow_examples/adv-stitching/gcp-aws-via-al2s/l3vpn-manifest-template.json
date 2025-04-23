@@ -1,0 +1,16 @@
+{
+  "dx_connection": {
+    "name": "?sn?",
+    "sparql": "SELECT ?sn  WHERE { ?tbl a mrs:RoutingTable. ?tbl nml:name ?sn. ?tbl mrs:hasRoute ?rt. ?rt mrs:routeTo ?to. ?to a nml:BidirectionalPort. ?to mrs:hasNetworkAttribute ?nt. ?nt mrs:value ?dx. }",
+    "required": "true"
+  },
+  "terminals": [
+    {
+     "port": "?to?",
+     "tag": "?vlan?",
+     "route_table_name": "?tn?",
+     "sparql": "SELECT ?to ?vlan ?tn WHERE { ?tbl a mrs:RoutingTable. ?tbl nml:name ?tn. ?tbl mrs:hasRoute ?rt. ?rt mrs:routeTo ?to. ?to a nml:BidirectionalPort. ?to nml:hasLabel ?l. ?l nml:value ?vlan}",
+     "required": "true"
+    }
+  ]
+}

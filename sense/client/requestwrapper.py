@@ -17,10 +17,10 @@ sys.path.insert(0, '..')
 @classwrapper
 class RequestWrapper(ApiClient):
     """Request Wrapper for SENSE-0 API (GET, PUT, POST, DELETE)"""
-    def __init__(self):
+    def __init__(self, config=None):
         self.logger = None
         self.__setdebug()
-        super(RequestWrapper, self).__init__()
+        super(RequestWrapper, self).__init__(config)
 
     def __setdebug(self):
         """Set Debug and log all http call details to console"""

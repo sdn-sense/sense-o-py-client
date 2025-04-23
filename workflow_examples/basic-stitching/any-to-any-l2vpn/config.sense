@@ -1,0 +1,48 @@
+variable:
+  - bandwidth:
+      default: 2000
+
+config:
+  - manifest_template:
+      - dnc_manifest_template:
+          switching_subnets:
+            - required: 'true'
+              subnet: ?subnet?
+              sparql: 'SELECT ?subnet WHERE { ?subnet a mrs:SwitchingSubnet. }'
+              switching_ports:
+                - port: ?terminal?
+                  tag: ?terminal_vlan?
+                  bw: '?qos_type? : ?bw_available? ?bw_unit?'
+                  required: 'false'
+                  sparql: 'SELECT ?terminal ?terminal_vlan ?qos_type ?bw_available ?bw_unit WHERE {
+                          ?subnet nml:hasBidirectionalPort ?terminal. ?terminal nml:hasLabel ?vlan. ?vlan nml:value ?terminal_vlan.
+                          OPTIONAL {?terminal nml:hasService ?bw_svc. ?bw_svc mrs:type ?qos_type. ?bw_svc mrs:availableCapacity ?bw_available. ?bw_svc mrs:unit ?bw_unit.}}'
+
+resource:
+  - service:
+      - pool1:
+          pool: AutoGOLE-IPv4-Test-Pool
+          addr_type: IPv4
+          batch: subnet
+          netmask: '/30'
+      - serv1:
+          profile: Any-to-Any-L2VPN-IPv4
+          manifest_template: '{{ manifest_template.dnc_manifest_template }}'
+          edit_template:
+              data.connections[0].terminals[0].uri: urn:ogf:network:maxgigapop.net:2013:ptxn-sense-v1.maxgigapop.net
+              data.connections[0].terminals[1].uri: urn:ogf:network:es.net:2013::star-cr6:2_1_c5_1:+
+              data.connections[0].suggest_ip_range[0].start: '{{ service.pool1.hosts[0] }}'
+              data.connections[0].suggest_ip_range[0].end: '{{ service.pool1.hosts[0] }}'
+              data.connections[0].bandwidth.capacity: '{{ var.bandwidth }}' 
+          count: 1
+      - serv2:
+          profile: Any-to-Any-L2VPN-IPv4
+          manifest_template: '{{ manifest_template.dnc_manifest_template }}'
+          edit_template:
+              data.connections[0].terminals[0].uri: urn:ogf:network:icair.org:2013:mren8700:esnet
+              data.connections[0].terminals[1].uri: urn:ogf:network:starlight.org:2022:r740xd4.it.northwestern.edu 
+              data.connections[0].suggest_ip_range[0].start: '{{ service.pool1.hosts[1] }}'
+              data.connections[0].suggest_ip_range[0].end: '{{ service.pool1.hosts[1] }}'
+              data.connections[0].terminals[0].vlan_tag: '{{ service.serv1.manifest.switching_subnets[1].switching_ports[1].tag }}'
+              data.connections[0].bandwidth.capacity: '{{ var.bandwidth }}' 
+          count: 1
