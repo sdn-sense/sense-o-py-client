@@ -1,34 +1,29 @@
 # Table of contents
 
  - [Description](#descr)
+ - [Stitching Sample Workflow Configuration](#wconfig)
  - [Installation](#install)
  - [Operation Instructions](#operate)
+ - [Quick Start](#quickstart)
 
 # <a name="descr"></a>Description
-The Sense Workflow tool allows users to deploy and compose sense services by using a yaml based workflow definition.
+The `Sense Workflow Tool` is a command-line python tool that enables you to define and provision `sense services` using configuration files. It uses a declarative language, which basically means you define the desired state of your workflow and the tool figures out the steps to achieve that state by following this simple procedure that consists of the following three steps. The `Sense Workflow Tool` maintains a state
+a state file on disk to track the current state of your workflow, enabling it to understand how to achieve the desired state.
 
-- For more details, refer to [sense workflow design document](./docs/workflow_design.md)
-- Many sample workflow definitions can be found under this directory. 
-- For a quick start, you can use the notebook [getting_started_example.ipynb](./notebooks/getting_started_example.ipynb)
-- Or use these instructions to exercise the sample workflow under `workflow_examples/basic-stitching/any-to-any-l2vpn`.
+- Step 1: Write
+<br>Write your configuration. You can refer to [sense workflow design document](./docs/workflow_design.md) or check out the many example sense workflow configration files ending with the `.sense` extension under the `workflow_examples` directory.
+- Step 2: Plan
+<br>Use the tool to display its plan to either add or remove `sense services` predicated upon the comparison of your declared workflow and the current state of existing `sense services`.
+- Step 3: Apply
+<br> Finally, use the tool to accept planned changes to add or remove `sense services`. 
 
-```
-# Feel free to change the session name specified by the `-s switch option`
->cd workflow_examples/basic-stitching/any-to-any-l2vpn
->sense_workflow.py sessions -show   # show existing sessions.
->sense_workflow.py workflow -s exp-any-to-any-l2vpn -validate
->sense_workflow.py workflow -s exp-any-to-any-l2vpn -plan -summary
->sense_workflow.py workflow -s exp-basic-any-to-any-l2vpn -apply  # create resources
->sense_workflow.py workflow -s exp-basic-any-to-any-l2vpn -show -summary # show state
->sense_workflow.py sessions -show
->sense_workflow.py workflow -s exp-basic-any-to-any-l2vpn -destroy # destroy resources
->sense_workflow.py sessions -show
-```
+# <a name="wconfig"></a>Stitching Sample Workflow Configuration
 
-The following snippet of the sample workflow shows how to connect outputs of a resource to another resource.
+The following workflow configuration snippet, though incomplete, consists of three services: a pool `sense service pool`` and two instance `sense services (serv1, serv2)` and shows how to stitch or connect outputs of a service to another service. For example service <i>serv1</i> and <i>serv2<i> use ip addresses from the pool <i>pool1</i> and service <i>serv2</i> uses the vlan tag from <i>serv1<i>'s second terminal.
 
-- Note how service <i>serv1</i> and <i>serv2<i> use ip addresses from pool <i>pool1</i>
-- Note how service <i>serv2</i> uses the vlan tag from <i>serv1<i>'s second terminal. 
+- The <i>edit_template</i>, not shown here, is used to ovverride the editable fields in a `sense profile`.
+- The <i>manifest_template</i>, not shown here, is used to retrieve the desired state of a deployed `sense service`
+- For more details, you can refer to [sense workflow design document](./docs/workflow_design.md)
 
 ```
 resource:
@@ -102,4 +97,25 @@ sense_workflow.py workflow --config-dir some_dir [--var-file some_var_file.yml] 
 
 # Use this option to manage your workflow sessions
 sense_workflow.py sessions -show
+```
+
+# <a name="quickstart"></a>Quick Start
+
+- [ ] Assumes you have installed the `Sense Worflow Tool`
+- [ ] Assumes you have configured your `Sense Credentials` (.sense-o-auth.yaml)
+
+
+The session name `exp-any-to-any-l2vpn` is arbitrarily picked. Feel free to change it. It is used as a prefix to
+name the `sense services` and to track the state of the workflow. 
+
+```
+>cd workflow_examples/basic-stitching/any-to-any-l2vpn
+>sense_workflow.py sessions -show                                           # show existing sessions.
+>sense_workflow.py workflow -s exp-any-to-any-l2vpn -validate
+>sense_workflow.py workflow -s exp-any-to-any-l2vpn -plan -summary
+>sense_workflow.py workflow -s exp-basic-any-to-any-l2vpn -apply            # create services
+>sense_workflow.py workflow -s exp-basic-any-to-any-l2vpn -show -summary    # show state
+>sense_workflow.py sessions -show
+>sense_workflow.py workflow -s exp-basic-any-to-any-l2vpn -destroy          # destroy services
+>sense_workflow.py sessions -show
 ```
