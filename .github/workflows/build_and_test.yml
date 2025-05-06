@@ -1,0 +1,55 @@
+name: BuildDockerImageAndTest 
+
+on:
+  workflow_dispatch:
+
+env:
+  sense_pyclient_image: sense-pyclient:cicd
+  SENSE_CREDS: ${{ secrets.KUBE_TOKEN }}
+  RUN_TEST_SENSE: ${{ vars.RUN_TEST_SENSE }}
+
+jobs:
+  DockerBuildAndTest:
+    runs-on: ubuntu-22.04
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: cicd/docker/Dockerfile
+          push: false
+          load: true
+          tags: ${{ env.sense_pyclient_image }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Save Sense Credentials 
+        if: false
+        run: |
+          echo ${{ env.SENSE_CREDS }} | base64 --decode > ${{ github.workspace }}/.sense-o-auth.yaml
+          ls -l ${{ github.workspace }}/.sense-o-auth.yaml
+
+      - name: Plan
+        if: false
+        run: |
+          docker run --rm -t ${{ env.sense_pyclient_image }} python3 -m sense.workflow.sense_workflow workflow -c workflow_examples/basic-stitching/any-to-any-l2vpn -s s1 -validate
+
+      - name: Plan
+        if: false
+        run: |
+          docker run --rm -t ${{ env.sense_pyclient_image }} python3 -m sense.workflow.sense_workflow workflow -c workflow_examples/basic-stitching/any-to-any-l2vpn -s s1 -plan
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache

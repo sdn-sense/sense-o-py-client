@@ -13,14 +13,14 @@ def create_parser(usage='%(prog)s [options]',
 
 def build_parser(*, manage_workflow, manage_sessions):
     description = (
-        'Sense'
+        'Sense Workflow Tool'
         '\n'
         '\n'
         'Examples:'
         '\n'
-        "      sense workflow --var-file vars.yml --session my_session -validate"
+        "      sense_workflow.py workflow --var-file vars.yml --session my_session -validate"
         '\n'
-        "      sense workflow --config-dir . --session my_session -validate"
+        "      sense_workflow.py workflow --config-dir . --session my_session -validate"
     )
 
     parser = create_parser(description=description)
