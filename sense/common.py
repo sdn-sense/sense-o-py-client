@@ -76,5 +76,5 @@ def getHTTPTimeout():
     return int(os.environ.get('SENSE_TIMEOUT', 300))
 
 def getHTTPRetries():
-    """Get HTTP Retries from env or default to 3"""
-    return int(os.environ.get('SENSE_RETRIES', 3))
+    """Get HTTP Retries from env or default to 1"""
+    return int(os.environ.get('SENSE_RETRIES', 1))
