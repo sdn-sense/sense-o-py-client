@@ -386,7 +386,7 @@ class WorkflowCombinedApi():
                  returns the request thread.
         """
 
-        all_params = ['body', 'si_uuid', 'sync']  # noqa: E501
+        all_params = ['body', 'si_uuid', 'sync', 'proceed']  # noqa: E501
         all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
@@ -417,6 +417,8 @@ class WorkflowCombinedApi():
         query_params = []
         if 'sync' in params:
             query_params.append(('sync', params['sync']))
+        if 'proceed' in params:
+            query_params.append(('proceed', params['proceed']))
 
         # Authentication setting
         # auth_settings = ['oAuth2Keycloak']  # noqa: E501
