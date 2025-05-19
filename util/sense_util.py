@@ -187,8 +187,13 @@ if __name__ == "__main__":
         if not args.uuid:
             raise ValueError("Missing the instance uuid `-u uuid`")
         workflowApi.si_uuid = args.uuid[0]
+        auto_proceed = 'true'
+        if args.options:
+            modifyOpts = args.options[0].split(",")
+            if 'compute-only' in modifyOpts:
+                auto_proceed = 'false'
         try:
-            response = workflowApi.instance_modify(json.dumps(intent), sync='true')
+            response = workflowApi.instance_modify(json.dumps(intent), sync='true', proceed=auto_proceed)
         except ValueError:
             raise
         print(f"modified service instance: {response}")
@@ -218,7 +223,7 @@ if __name__ == "__main__":
             status = workflowApi.instance_get_status(si_uuid=args.uuid[0])
             if 'error' in status:
                 raise ValueError(status)
-            if 'CREATE' not in status and 'REINSTATE' not in status:
+            if 'CREATE' not in status and 'REINSTATE' not in status and 'MODIFY' not in status:
                 raise ValueError(f"cannot provision an instance in '{status}' status...")
             elif 'COMPILED' not in status:
                 raise ValueError(f"cannot provision an instance in '{status}' status...")
