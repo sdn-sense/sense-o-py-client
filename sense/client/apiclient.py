@@ -34,6 +34,7 @@ class ApiClient():
         if 'error' in self.token.keys() and 'error_description' in self.token.keys():
             raise Exception(f"Failed to get token. Bad credentials? Error: {self.token['error_description']}")
         self._setHeaders()
+        self._refreshToken()
 
     def _setHeaders(self, content='json', accept='json'):
         """Set Headers for API calls"""
@@ -42,7 +43,20 @@ class ApiClient():
 
     def _refreshToken(self):
         """Refresh Token from SENSE-0 Auth API"""
-        self._getToken()
+        data = {'grant_type': 'refresh_token',
+                'client_id': self.config['CLIENT_ID'],
+                'client_secret': self.config['SECRET'],
+                'refresh_token': self.token['refresh_token']}
+        tokenResponse = requests.post(self.config['AUTH_ENDPOINT'],
+                                      data=data,
+                                      verify=self.config['verify'],
+                                      allow_redirects=self.config['allow_redirects'],
+                                      timeout=int(os.environ.get('SENSE_TIMEOUT', 60)))
+        self.token = json.loads(tokenResponse.text)
+        if 'error' in self.token.keys() and 'error_description' in self.token.keys():
+            self._getToken()
+        else:
+            self._setHeaders()
 
     def _setDefaults(self):
         """Set Defaults for Config"""
