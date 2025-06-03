@@ -147,14 +147,9 @@ if __name__ == "__main__":
                 except ValueError:
                     workflowApi.instance_delete()
                     raise
-            if not args.verbose and '"model":' in response:
-                res_dict = json.loads(response)
-                if 'model' in res_dict:
-                    res_dict.pop('model')
-                if 'queries' in res_dict:
-                    res_dict.pop('queries')
-                response = json.dumps(res_dict)
-            print(f"computed service instance: {response}")
+            if not args.verbose and 'model' in response:
+                response.pop('model')
+            print(f"computed service instance: {json.dumps(response)}")
         elif args.uuid:
             # create by straight profile
             intent = {'service_profile_uuid': args.uuid[0]}
@@ -167,14 +162,9 @@ if __name__ == "__main__":
             except ValueError:
                 workflowApi.instance_delete()
                 raise
-            if not args.verbose and '"model":' in response:
-                res_dict = json.loads(response)
-                if 'model' in res_dict:
-                    res_dict.pop('model')
-                if 'queries' in res_dict:
-                    res_dict.pop('queries')
-                response = json.dumps(res_dict)
-            print(f"computed service instance: {response}")
+            if not args.verbose and 'model' in response:
+                response.pop('model')
+            print(f"computed service instance: {json.dumps(response)}")
     elif args.modify:
         if not args.file:
             raise ValueError("Missing the request file `-f mod_intent_json_file`")
@@ -194,9 +184,11 @@ if __name__ == "__main__":
                 auto_proceed = 'false'
         try:
             response = workflowApi.instance_modify(json.dumps(intent), sync='true', proceed=auto_proceed)
+            if not args.verbose and 'model' in response:
+                response.pop('model')
+            print(f"computed service instance: {json.dumps(response)}")
         except ValueError:
             raise
-        print(f"modified service instance: {response}")
     elif args.cancel:
         if args.uuid:
             workflowApi = WorkflowCombinedApi()
