@@ -3,14 +3,16 @@
 import os
 import json
 import requests
-from sense.common import classwrapper
+from sense.common import classwrapper, getHTTPTimeout
 from sense.common import getConfig
 
 requests.packages.urllib3.disable_warnings()
 
+
 @classwrapper
-class ApiClient():
+class ApiClient:
     """API Client for SENSE-0 get Token and Config"""
+
     def __init__(self, config):
         # For now only pass config file; Later all params
         self.config = config or getConfig()
@@ -29,7 +31,7 @@ class ApiClient():
                                       verify=self.config['verify'],
                                       allow_redirects=self.config['allow_redirects'],
                                       auth=(self.config['CLIENT_ID'], self.config['SECRET']),
-                                      timeout=int(os.environ.get('SENSE_TIMEOUT', 60)))
+                                      timeout=getHTTPTimeout())
         self.token = json.loads(tokenResponse.text)
         if 'error' in self.token.keys() and 'error_description' in self.token.keys():
             raise Exception(f"Failed to get token. Bad credentials? Error: {self.token['error_description']}")
@@ -42,7 +44,20 @@ class ApiClient():
 
     def _refreshToken(self):
         """Refresh Token from SENSE-0 Auth API"""
-        self._getToken()
+        data = {'grant_type': 'refresh_token',
+                'client_id': self.config['CLIENT_ID'],
+                'client_secret': self.config['SECRET'],
+                'refresh_token': self.token['refresh_token']}
+        tokenResponse = requests.post(self.config['AUTH_ENDPOINT'],
+                                      data=data,
+                                      verify=self.config['verify'],
+                                      allow_redirects=self.config['allow_redirects'],
+                                      timeout=getHTTPTimeout())
+        self.token = json.loads(tokenResponse.text)
+        if 'error' in self.token.keys() and 'error_description' in self.token.keys():
+            self._getToken()
+        else:
+            self._setHeaders()
 
     def _setDefaults(self):
         """Set Defaults for Config"""
