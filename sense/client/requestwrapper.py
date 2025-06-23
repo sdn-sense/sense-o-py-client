@@ -157,4 +157,10 @@ class RequestWrapper(ApiClient):
                 return ret.text  # TODO: valudate XML in ret text
         except:
             pass
+        # This should not happen, that ret is None, but I catched few failures like that.
+        # And it looks like it happens when client code jas DNS failures to communicate with outside.
+        if ret is None:
+            exc = ValueError("HTTP response is None. DNS Failure?")
+            exc.json = {"failure": "HTTP response is None. DNS Failure?"}
+            raise exc
         return ret.text if ret.text is not None else ret
