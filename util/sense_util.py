@@ -10,6 +10,7 @@ from sense.client.task_api import TaskApi
 from sense.client.workflow_combined_api import WorkflowCombinedApi
 from sense.client.profile_api import ProfileApi
 from sense.client.discover_api import DiscoverApi
+from sense.common import bw2bps
 
 if __name__ == "__main__":
 
@@ -59,6 +60,8 @@ if __name__ == "__main__":
                             help="Update a task status (requires --uuid --status). Can add an optional status JSON using --file.")
     operations.add_argument("--task-delete", action="store_true",
                             help="Remove a task (requires --uuid)")
+    operations.add_argument("--troubleshoot", action="store_true",
+                            help="troubleshoot system or a service instance (requires --opt)")
     parser.add_argument("-f", "--file", action="append",
                         help="service intent request file")
     parser.add_argument("-u", "--uuid", action="append",
@@ -554,3 +557,48 @@ if __name__ == "__main__":
             print(response)
         else:
             raise ValueError(f"Invalid address allocate/free/affiliate options")
+    elif args.troubleshoot:
+        if args.options:
+            troubleshootOpts = args.options[0].split(",")
+            if troubleshootOpts[0] == 'path-bandwidth':
+                if not args.uuid:
+                    raise ValueError(f"Invalid troubleshoot path-bandwidth option: require -u uuid")
+                workflowApi = WorkflowCombinedApi()
+                template_json_txt = """
+                    {
+                    "Path": [
+                      {
+                          "Port": "?sw_port?",
+                          "Port Capacity": "?sw_port_capacity?",
+                          "Capacity Unit": "?sw_port_capacity_unit?",
+                          "sparql": "SELECT ?vlan_port ?sw_port_capacity  WHERE { ?subnet a mrs:SwitchingSubnet. ?subnet nml:hasBidirectionalPort ?vlan_port. }",
+                          "sparql-ext": "SELECT ?sw_port ?sw_port_capacity ?sw_port_capacity_unit WHERE { ?sw_port a nml:BidirectionalPort. ?sw_port nml:hasBidirectionalPort ?vlan_port. ?sw_port nml:hasService ?sw_port_bw_svc. ?sw_port_bw_svc mrs:reservableCapacity ?sw_port_capacity. ?sw_port_bw_svc mrs:unit ?sw_port_capacity_unit.}",
+                          "Allocations": [
+                            {
+                                "VLAN": "?vlan?",
+                                "Bandwidth": "?sub_port_capacity?",
+                                "Bandwidth Unit": "?sub_port_capacity_unit?",
+                                "sparql-ext": "SELECT ?vlan ?sub_port_capacity ?sub_port_capacity_unit WHERE { ?sw_port nml:hasBidirectionalPort ?sub_port. ?sub_port nml:hasLabel ?sub_port_label. ?sub_port_label nml:value ?vlan. ?sub_port nml:hasService ?sub_port_bw_svc. ?sub_port_bw_svc mrs:reservableCapacity ?sub_port_capacity. ?sub_port_bw_svc mrs:unit ?sub_port_capacity_unit.}", 
+                                "required": "false"
+                            }
+                          ],
+                          "required": "true"
+                      }
+                    ]
+                    }
+                """
+                workflowApi.si_uuid = args.uuid[0]
+                response = workflowApi.manifest_create(template_json_txt)
+                path_json = json.loads(response['jsonTemplate'])
+                for port in path_json['Path']:
+                    avail_bw = bw2bps(port['Port Capacity'], port['Capacity Unit'])
+                    port['Port Capacity'] = str(avail_bw/1000000000) + ' gbps'
+                    del port['Capacity Unit']
+                    if 'Allocations' in port:
+                        for alloc in port['Allocations']:
+                            alloc_bw = bw2bps(alloc['Bandwidth'], alloc['Bandwidth Unit'])
+                            avail_bw -= alloc_bw
+                    if not args.verbose:
+                        del port['Allocations']
+                    port['Remaining Capacity'] = str(avail_bw/1000000000) + ' gbps'
+                print(json.dumps(path_json, indent=2))
