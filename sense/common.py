@@ -78,3 +78,16 @@ def getHTTPTimeout():
 def getHTTPRetries():
     """Get HTTP Retries from env or default to 1"""
     return int(os.environ.get('SENSE_RETRIES', 1))
+
+
+def bw2bps(bw: str, unit: str)->int:
+    factor = 1
+    if unit.startswith(('t', 'T')):
+        factor = 1000000000000
+    elif unit.startswith(('g', 'G')):
+        factor = 1000000000
+    elif unit.startswith(('m', 'M')):
+        factor = 1000000
+    elif unit.startswith(('k', 'K')):
+        factor = 1000
+    return int(bw)*factor
