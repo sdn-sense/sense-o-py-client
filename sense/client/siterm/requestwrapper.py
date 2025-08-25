@@ -54,8 +54,8 @@ class GitRepo():
                         continue
                     conf = loadYamlFile(confFile)
                     webdomain = conf.get('general', {}).get('webdomain', '')
-                    for site in conf.get('general', {}).get('sites', ''):
-                        siteUrls.setdefault(site, webdomain)
+                    sitename = conf.get('general', {}).get('sitename', '')
+                    siteUrls.setdefault(sitename, webdomain)
         # Remove dir
         rmtree(repo, ignore_errors=True)
         # Save to cache file

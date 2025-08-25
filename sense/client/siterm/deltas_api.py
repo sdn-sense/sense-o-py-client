@@ -20,40 +20,43 @@ class DeltasApi:
     def get_deltas(self, **kwargs):
         """Get deltas from the SENSE-SiteRM API"""
         sitename = self._getSitename(**kwargs)
-        # kwargs['urlparams'] = {'encode': 'false', 'summary': 'false', 'oldview': 'true', 'model': 'turtle'}
-        for key in ['encode', 'summary', 'oldview', 'model']:
+        for key in ['summary', 'limit']:
             if key in kwargs:
                 kwargs.setdefault('urlparams', {})
                 kwargs['urlparams'][key] = kwargs[key]
         return self.client.makeRequest(sitename=sitename,
-                                        url=f"/{sitename}/sitefe/v1/deltas",
+                                        url=f"/api/{sitename}/deltas",
                                         **{"verb": "GET", "data": {}, "urlparams": kwargs.get('urlparams', None)})
 
     def get_delta(self, **kwargs):
         """Get delta from the SENSE-SiteRM API"""
         sitename = self._getSitename(**kwargs)
-        for key in ['encode', 'summary', 'oldview', 'model']:
+        for key in ['summary']:
             if key in kwargs:
                 kwargs.setdefault('urlparams', {})
                 kwargs['urlparams'][key] = kwargs[key]
-        # kwargs['urlparams'] = {'encode': 'false', 'summary': 'false', 'oldview': 'true', 'model': 'turtle'}
         return self.client.makeRequest(sitename=sitename,
-                                        url=f"/{sitename}/sitefe/v1/deltas/{kwargs.get('delta_id')}",
+                                        url=f"/api/{sitename}/deltas/{kwargs.get('delta_id')}",
                                         **{"verb": "GET", "data": {}, "urlparams": kwargs.get('urlparams', None)})
 
-    def get_delta_states(self, **kwargs):
-        """Get delta states from the SENSE-SiteRM API"""
+    def get_delta_timestates(self, **kwargs):
+        """Get delta time states from the SENSE-SiteRM API"""
         sitename = self._getSitename(**kwargs)
+        for key in ['limit']:
+            if key in kwargs:
+                kwargs.setdefault('urlparams', {})
+                kwargs['urlparams'][key] = kwargs[key]
         return self.client.makeRequest(sitename=sitename,
-                                        url=f"/{sitename}/sitefe/v1/deltastates/{kwargs.get('delta_id')}",
-                                        **{"verb": "GET", "data": {}})
+                                        url=f"/api/{sitename}/deltas/{kwargs.get('delta_id')}/timestates",
+                                        **{"verb": "GET", "data": {}, "urlparams": kwargs.get('urlparams', None)})
 
-
-    def forceapplydelta(self, **kwargs):
-        """Force Apply Delta inside SiteRM"""
+    def set_delta_action(self, **kwargs):
+        """Set delta action in the SENSE-SiteRM API"""
         sitename = self._getSitename(**kwargs)
-        if not ('uuid' in kwargs and kwargs['uuid']):
-            raise Exception("Force apply requires delta uuid to be passed as argument.")
+        if not ('delta_id' in kwargs and kwargs['delta_id']):
+            raise Exception("Delta ID is required to set delta action.")
+        if not ('action' in kwargs and kwargs['action']):
+            raise Exception("Action is required to set delta action.")
         return self.client.makeRequest(sitename=sitename,
-                                        url=f"/{sitename}/sitefe/v1/deltaforceapply",
-                                        **{"verb": "POST", "data": {"uuid": kwargs["uuid"]}})
+                                        url=f"/api/{sitename}/deltas/{kwargs['delta_id']}/actions/{kwargs['action']}",
+                                        **{"verb": "PUT", "data": {}})

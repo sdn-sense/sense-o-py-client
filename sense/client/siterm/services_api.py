@@ -17,23 +17,38 @@ class ServicesApi:
             raise Exception("Sitename is required for get_configuration")
         return sitename
 
+    def get_services(self, **kwargs):
+        """Get services from the SENSE-SiteRM API"""
+        sitename = self._getSitename(**kwargs)
+        for key in ['hostname', 'servicename']:
+            if key in kwargs:
+                kwargs.setdefault('urlparams', {})
+                kwargs['urlparams'][key] = kwargs[key]
+        return self.client.makeRequest(sitename=sitename,
+                                       url=f"/api/{sitename}/services",
+                                       **{"verb": "GET", "data": {}, "urlparams": kwargs.get('urlparams', None)})
+
     def get_servicestates(self, **kwargs):
         """Get service states from the SENSE-SiteRM API"""
         sitename = self._getSitename(**kwargs)
+        for key in ['limit']:
+            if key in kwargs:
+                kwargs.setdefault('urlparams', {})
+                kwargs['urlparams'][key] = kwargs[key]
         return self.client.makeRequest(sitename=sitename,
-                                       url=f"/{sitename}/sitefe/json/frontend/getservicestates",
-                                       **{"verb": "GET", "data": {}})
+                                       url=f"/api/{sitename}/servicesstates",
+                                       **{"verb": "GET", "data": {}, "urlparams": kwargs.get('urlparams', None)})
 
     def reloadconfig(self, **kwargs):
         """Reload configuration via SENSE-SiteRM API for specific entry"""
-        vals = {"hostname": None, "servicename": "ALL",
-                "sitename": None, "action": "reload"}
+        sitename = self._getSitename(**kwargs)
+        vals = {"hostname": "default", "servicename": "ALL",
+                "sitename": sitename, "action": "reload"}
         for key in vals:
             if key in kwargs:
                 vals[key] = kwargs[key]
             if not vals[key]:
                 raise Exception(f"Key {key} is required for reloadconfig")
-        sitename = self._getSitename(**kwargs)
         return self.client.makeRequest(sitename=sitename,
-                                       url=f"/{sitename}/sitefe/json/frontend/serviceaction",
+                                       url=f"/api/{sitename}/serviceaction",
                                        **{"verb": "POST", "data": vals})

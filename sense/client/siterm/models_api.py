@@ -20,24 +20,22 @@ class ModelsApi:
     def get_models(self, **kwargs):
         """Get models from the SENSE-SiteRM API"""
         sitename = self._getSitename(**kwargs)
-        # kwargs['urlparams'] = {'encode': 'false', 'summary': 'false', 'oldview': 'true',
-        #                        'current': 'False', 'model': 'turtle'}
-        for key in ['encode', 'summary', 'oldview', 'current', 'model']:
+        for key in ['encode', 'summary', 'current', 'limit', 'rdfformat']:
             if key in kwargs:
                 kwargs.setdefault('urlparams', {})
                 kwargs['urlparams'][key] = kwargs[key]
         return self.client.makeRequest(sitename=sitename,
-                                        url=f"/{sitename}/sitefe/v1/models",
+                                        url=f"api/{sitename}/models",
                                         **{"verb": "GET", "data": {}, "urlparams": kwargs.get('urlparams', None)})
 
     def get_model(self, **kwargs):
         """Get model from the SENSE-SiteRM API"""
         sitename = self._getSitename(**kwargs)
         # kwargs['urlparams'] = {'encode': 'false', 'summary': 'false'}
-        for key in ['encode', 'summary']:
+        for key in ['encode', 'summary', 'rdfformat']:
             if key in kwargs:
                 kwargs.setdefault('urlparams', {})
                 kwargs['urlparams'][key] = kwargs[key]
         return self.client.makeRequest(sitename=sitename,
-                                        url=f"/{sitename}/sitefe/v1/models/{kwargs.get('model_id')}",
-                                        **{"verb": "GET", "data": {}})
+                                        url=f"/api/{sitename}/models/{kwargs.get('model_id')}",
+                                        **{"verb": "GET", "data": {}, "urlparams": kwargs.get('urlparams', None)})
