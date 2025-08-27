@@ -21,7 +21,7 @@ class ServicesApi:
         """Get services from the SENSE-SiteRM API"""
         sitename = self._getSitename(**kwargs)
         for key in ['hostname', 'servicename']:
-            if key in kwargs:
+            if key in kwargs and kwargs[key]:
                 kwargs.setdefault('urlparams', {})
                 kwargs['urlparams'][key] = kwargs[key]
         return self.client.makeRequest(sitename=sitename,
@@ -32,7 +32,7 @@ class ServicesApi:
         """Get service states from the SENSE-SiteRM API"""
         sitename = self._getSitename(**kwargs)
         for key in ['limit']:
-            if key in kwargs:
+            if key in kwargs and kwargs[key]:
                 kwargs.setdefault('urlparams', {})
                 kwargs['urlparams'][key] = kwargs[key]
         return self.client.makeRequest(sitename=sitename,
@@ -45,9 +45,9 @@ class ServicesApi:
         vals = {"hostname": "default", "servicename": "ALL",
                 "sitename": sitename, "action": "reload"}
         for key in vals:
-            if key in kwargs:
+            if key in kwargs and kwargs[key]:
                 vals[key] = kwargs[key]
-            if not vals[key]:
+            if not vals.get(key):
                 raise Exception(f"Key {key} is required for reloadconfig")
         return self.client.makeRequest(sitename=sitename,
                                        url=f"/api/{sitename}/serviceaction",

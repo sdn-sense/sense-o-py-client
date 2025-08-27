@@ -126,7 +126,7 @@ class DebugApi:
         sitename = self._get_sitename(**kwargs)
         urlparams = {}
         for key in ["details", "hostname", "state", "limit"]:
-            if key in kwargs:
+            if key in kwargs and kwargs[key]:
                 urlparams[key] = kwargs[key]
         return self.client.makeRequest(sitename=sitename,
                                        url=f"/api/{sitename}/debug/{kwargs['id']}",
@@ -135,8 +135,13 @@ class DebugApi:
     def get_all_debug_hostname(self, **kwargs):
         """Get all debug info from SENSE-SiteRM Endpoint"""
         sitename = self._get_sitename(**kwargs)
+        params = "?"
+        for key in ["hostname", "state", "limit", "action"]:
+            if key in kwargs and kwargs[key]:
+                params += f"{key}={kwargs[key]}&"
+        params += "debugvar=ALL&details=true"
         return self.client.makeRequest(sitename=sitename,
-                                       url=f"/api/{sitename}/debug?hostname={kwargs['hostname']}&state={kwargs['state']}",
+                                       url=f"/api/{sitename}/debug{params}",
                                        **{"verb": "GET", "data": {}})
 
     def delete_debug(self, **kwargs):

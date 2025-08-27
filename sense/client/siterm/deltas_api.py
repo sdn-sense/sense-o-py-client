@@ -21,7 +21,7 @@ class DeltasApi:
         """Get deltas from the SENSE-SiteRM API"""
         sitename = self._getSitename(**kwargs)
         for key in ['summary', 'limit']:
-            if key in kwargs:
+            if key in kwargs and kwargs[key]:
                 kwargs.setdefault('urlparams', {})
                 kwargs['urlparams'][key] = kwargs[key]
         return self.client.makeRequest(sitename=sitename,
@@ -32,7 +32,7 @@ class DeltasApi:
         """Get delta from the SENSE-SiteRM API"""
         sitename = self._getSitename(**kwargs)
         for key in ['summary']:
-            if key in kwargs:
+            if key in kwargs and kwargs[key]:
                 kwargs.setdefault('urlparams', {})
                 kwargs['urlparams'][key] = kwargs[key]
         return self.client.makeRequest(sitename=sitename,
@@ -43,7 +43,7 @@ class DeltasApi:
         """Get delta time states from the SENSE-SiteRM API"""
         sitename = self._getSitename(**kwargs)
         for key in ['limit']:
-            if key in kwargs:
+            if key in kwargs and kwargs[key]:
                 kwargs.setdefault('urlparams', {})
                 kwargs['urlparams'][key] = kwargs[key]
         return self.client.makeRequest(sitename=sitename,
