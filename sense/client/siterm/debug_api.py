@@ -150,3 +150,17 @@ class DebugApi:
         return self.client.makeRequest(sitename=sitename,
                                        url=f"/api/{sitename}/debug/{kwargs['id']}",
                                        **{"verb": "DELETE", "data": {}})
+
+    def update_debug(self, **kwargs):
+        """Update debug info in SENSE-SiteRM Endpoint"""
+        sitename = self._get_sitename(**kwargs)
+        if "state" not in kwargs or not kwargs["state"]:
+            raise Exception("State is required for update_debug")
+        if "id" not in kwargs or not kwargs["id"]:
+            raise Exception("ID is required for update_debug")
+        data = {"id": kwargs["id"], "state": kwargs["state"]}
+        if "output" in kwargs and kwargs["output"]:
+            data["output"] = kwargs["output"]
+        return self.client.makeRequest(sitename=sitename,
+                                       url=f"/api/{sitename}/debug/{kwargs['id']}",
+                                       **{"verb": "PUT", "data": data})
