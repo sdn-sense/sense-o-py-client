@@ -25,7 +25,7 @@ class GitRepo():
     def __init__(self, config):
         self.config = config
 
-    def _getSiteRMRepo(self):
+    def getSiteRMRepo(self):
         """Get SiteRM Config Repo"""
         dirPath = tempfile.mkdtemp()
         Repo.clone_from(self.config['SITERM_REPO'], dirPath)
@@ -35,11 +35,13 @@ class GitRepo():
         """Get All SiteRM Configs"""
         fname = f"/tmp/siterm_endpoints_cache_{datetime.datetime.now().strftime('%Y-%m-%d')}.json"
         siteUrls = {}
+        domainUrns = {}
         if os.path.isfile(fname):
             with open(fname, 'r', encoding="utf-8") as fd:
-                return json.loads(fd.read())
+                tmpdata = json.loads(fd.read())
+                return tmpdata.get('fes', {}), tmpdata.get('domainUrns', {})
         # If cache file not available, prepare a new one.
-        repo = self._getSiteRMRepo()
+        repo = self.getSiteRMRepo()
         for dirName in os.listdir(repo):
             siteConfDir = os.path.join(repo, dirName)
             mappingFile = os.path.join(siteConfDir, 'mapping.yaml')
@@ -56,12 +58,18 @@ class GitRepo():
                     webdomain = conf.get('general', {}).get('webdomain', '')
                     sitename = conf.get('general', {}).get('sitename', '')
                     siteUrls.setdefault(sitename, webdomain)
+                    # Get Sitename domain and year (def year is 2025)
+                    # And create a list of domain urns -> sitename
+                    domain = conf.get(sitename, {}).get('domain', '')
+                    year = conf.get(sitename, {}).get('year', 2025)
+                    if domain and sitename:
+                        domainUrns.setdefault(f"urn:ogf:network:{domain}:{year}", sitename)
         # Remove dir
         rmtree(repo, ignore_errors=True)
         # Save to cache file
         with open(fname, 'w', encoding="utf-8") as fd:
-            fd.write(json.dumps(siteUrls))
-        return siteUrls
+            fd.write(json.dumps({"fes": siteUrls, "domainUrns": domainUrns}))
+        return siteUrls, domainUrns
 
 @classwrapper
 class RequestWrapper(GitRepo):
@@ -74,7 +82,7 @@ class RequestWrapper(GitRepo):
         if not self.config['SITERM_VERIFY']:
             urllib3.disable_warnings()
         super(RequestWrapper, self).__init__(self.config)
-        self.fes = self.getAllSiteRMs()
+        self.fes, self.domainUrns = self.getAllSiteRMs()
 
     def _setDefaults(self):
         """Set Defaults for Config"""
@@ -91,6 +99,12 @@ class RequestWrapper(GitRepo):
             if param not in self.config.keys():
                 raise Exception(f"Config parameter {param} is not set")
 
+    def getSitenameFromUrn(self, urn):
+        """Get Sitename from URN"""
+        if urn not in self.domainUrns.keys():
+            raise Exception(f"URN {urn} not found in SiteRM configs")
+        return self.domainUrns[urn]
+
     def _getFullUrl(self, sitename, url):
         """Get Full URL"""
         if sitename not in self.fes.keys():
@@ -101,6 +115,7 @@ class RequestWrapper(GitRepo):
     def makeRequest(self, sitename, url, **kwargs):
         """Make HTTP Request"""
         url = self._getFullUrl(sitename, url)
+        out = None
         if kwargs.get('verb', None) not in ['GET', 'POST', 'PUT']:
             raise Exception(f"Wrong action call {kwargs}")
         # GET
@@ -119,7 +134,7 @@ class RequestWrapper(GitRepo):
                                verify=self.config['SITERM_VERIFY'], timeout=getHTTPTimeout())
         outval = ""
         try:
-            if out.headers.get("content-type") == "application/json":
+            if out and out.headers.get("content-type") == "application/json":
                 outval = out.json()
         except:
             outval = out.text

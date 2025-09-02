@@ -3,23 +3,16 @@
 """
     SENSE-SiteRM Deltas API
 """
-from sense.client.siterm.requestwrapper import RequestWrapper
+from sense.client.siterm.base_api import BaseApi
 
-
-class DeltasApi:
+class DeltasApi(BaseApi):
     """Deltas API for SENSE-SiteRM"""
     def __init__(self):
-        self.client = RequestWrapper()
-
-    def _getSitename(self, **kwargs):
-        sitename = kwargs.get("sitename", None)
-        if not sitename:
-            raise Exception("Sitename is required for get_configuration")
-        return sitename
+        super().__init__()
 
     def get_deltas(self, **kwargs):
         """Get deltas from the SENSE-SiteRM API"""
-        sitename = self._getSitename(**kwargs)
+        sitename = self.getSitename(**kwargs)
         for key in ['summary', 'limit']:
             if key in kwargs and kwargs[key]:
                 kwargs.setdefault('urlparams', {})
@@ -30,7 +23,7 @@ class DeltasApi:
 
     def get_delta(self, **kwargs):
         """Get delta from the SENSE-SiteRM API"""
-        sitename = self._getSitename(**kwargs)
+        sitename = self.getSitename(**kwargs)
         for key in ['summary']:
             if key in kwargs and kwargs[key]:
                 kwargs.setdefault('urlparams', {})
@@ -41,7 +34,7 @@ class DeltasApi:
 
     def get_delta_timestates(self, **kwargs):
         """Get delta time states from the SENSE-SiteRM API"""
-        sitename = self._getSitename(**kwargs)
+        sitename = self.getSitename(**kwargs)
         for key in ['limit']:
             if key in kwargs and kwargs[key]:
                 kwargs.setdefault('urlparams', {})
@@ -52,7 +45,7 @@ class DeltasApi:
 
     def set_delta_action(self, **kwargs):
         """Set delta action in the SENSE-SiteRM API"""
-        sitename = self._getSitename(**kwargs)
+        sitename = self.getSitename(**kwargs)
         if not ('delta_id' in kwargs and kwargs['delta_id']):
             raise Exception("Delta ID is required to set delta action.")
         if not ('action' in kwargs and kwargs['action']):

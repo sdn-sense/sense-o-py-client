@@ -3,19 +3,13 @@
 """
     SENSE-SiteRM Debug API
 """
-from sense.client.siterm.requestwrapper import RequestWrapper
+from sense.client.siterm.base_api import BaseApi
 
 
-class DebugApi:
+class DebugApi(BaseApi):
     """Debug API for SENSE-SiteRM"""
     def __init__(self):
-        self.client = RequestWrapper()
-
-    def _get_sitename(self, **kwargs):
-        sitename = kwargs.get("sitename", None)
-        if not sitename:
-            raise Exception("Sitename is required for get_configuration")
-        return sitename
+        super().__init__()
 
     # TODO. Need to rewrite with checked Frontend output from debugactioninfo
     # Each Frontend and Site can support different parameters and actions. And also have different defaults.
@@ -27,14 +21,14 @@ class DebugApi:
 
     def get_debugactions(self, **kwargs):
         """Get debug actions from the SENSE-SiteRM API"""
-        sitename = self._get_sitename(**kwargs)
+        sitename = self.getSitename(**kwargs)
         return self.client.makeRequest(sitename=sitename,
                                        url=f"/api/{sitename}/debugactions",
                                        **{"verb": "GET", "data": {}})
 
     def get_debugactioninfo(self, **kwargs):
         """Get debug action info from the SENSE-SiteRM API"""
-        sitename = self._get_sitename(**kwargs)
+        sitename = self.getSitename(**kwargs)
         action = kwargs.get("action", None)
         if not action:
             raise Exception("Action is required for get_debugactioninfo")
@@ -45,7 +39,7 @@ class DebugApi:
 
     def __submit_call(self, **kwargs):
         """Submit a debug call to the SENSE-SiteRM API"""
-        sitename = self._get_sitename(**kwargs)
+        sitename = self.getSitename(**kwargs)
         submitout = {"hostname": kwargs.get("hostname", "undefined"),
                      "request": kwargs}
         return self.client.makeRequest(sitename=sitename, url=f"/api/{sitename}/debug",
@@ -69,6 +63,12 @@ class DebugApi:
         """Submit a ping test to the SENSE-SiteRM API"""
         self._check_action_supported("rapid-ping", **kwargs)
         kwargs["type"] = "rapid-ping"
+        return self.__submit_call(**kwargs)
+
+    def submit_pingnet(self, **kwargs):
+        """Submit a ping test to the SENSE-SiteRM API"""
+        self._check_action_supported("rapid-pingnet", **kwargs)
+        kwargs["type"] = "rapid-pingnet"
         return self.__submit_call(**kwargs)
 
     def submit_arptable(self, **kwargs):
@@ -123,7 +123,7 @@ class DebugApi:
 
     def get_debug(self, **kwargs):
         """Get debug info from SENSE-SiteRM Endpoint"""
-        sitename = self._get_sitename(**kwargs)
+        sitename = self.getSitename(**kwargs)
         urlparams = {}
         for key in ["details", "hostname", "state", "limit"]:
             if key in kwargs and kwargs[key]:
@@ -134,7 +134,7 @@ class DebugApi:
 
     def get_all_debug_hostname(self, **kwargs):
         """Get all debug info from SENSE-SiteRM Endpoint"""
-        sitename = self._get_sitename(**kwargs)
+        sitename = self.getSitename(**kwargs)
         params = "?"
         for key in ["hostname", "state", "limit", "action"]:
             if key in kwargs and kwargs[key]:
@@ -146,14 +146,14 @@ class DebugApi:
 
     def delete_debug(self, **kwargs):
         """Delete debug info in SENSE-SiteRM Endpoint"""
-        sitename = self._get_sitename(**kwargs)
+        sitename = self.getSitename(**kwargs)
         return self.client.makeRequest(sitename=sitename,
                                        url=f"/api/{sitename}/debug/{kwargs['id']}",
                                        **{"verb": "DELETE", "data": {}})
 
     def update_debug(self, **kwargs):
         """Update debug info in SENSE-SiteRM Endpoint"""
-        sitename = self._get_sitename(**kwargs)
+        sitename = self.getSitename(**kwargs)
         if "state" not in kwargs or not kwargs["state"]:
             raise Exception("State is required for update_debug")
         if "id" not in kwargs or not kwargs["id"]:
@@ -164,3 +164,10 @@ class DebugApi:
         return self.client.makeRequest(sitename=sitename,
                                        url=f"/api/{sitename}/debug/{kwargs['id']}",
                                        **{"verb": "PUT", "data": data})
+
+    def get_dynamicranges(self, **kwargs):
+        """Get dynamic ranges from SENSE-SiteRM Endpoint)"""
+        sitename = self.getSitename(**kwargs)
+        return self.client.makeRequest(sitename=sitename,
+                                       url=f"/api/{sitename}/dynamicfromranges",
+                                       **{"verb": "GET", "data": {}})

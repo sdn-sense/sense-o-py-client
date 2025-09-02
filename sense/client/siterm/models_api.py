@@ -3,23 +3,16 @@
 """
     SENSE-SiteRM Models API
 """
-from sense.client.siterm.requestwrapper import RequestWrapper
+from sense.client.siterm.base_api import BaseApi
 
-
-class ModelsApi:
+class ModelsApi(BaseApi):
     """Models API for SENSE-SiteRM"""
     def __init__(self):
-        self.client = RequestWrapper()
-
-    def _getSitename(self, **kwargs):
-        sitename = kwargs.get("sitename", None)
-        if not sitename:
-            raise Exception("Sitename is required for get_configuration")
-        return sitename
+        super().__init__()
 
     def get_models(self, **kwargs):
         """Get models from the SENSE-SiteRM API"""
-        sitename = self._getSitename(**kwargs)
+        sitename = self.getSitename(**kwargs)
         for key in ['encode', 'summary', 'current', 'limit', 'rdfformat']:
             if key in kwargs and kwargs[key]:
                 kwargs.setdefault('urlparams', {})
@@ -30,8 +23,7 @@ class ModelsApi:
 
     def get_model(self, **kwargs):
         """Get model from the SENSE-SiteRM API"""
-        sitename = self._getSitename(**kwargs)
-        # kwargs['urlparams'] = {'encode': 'false', 'summary': 'false'}
+        sitename = self.getSitename(**kwargs)
         for key in ['encode', 'summary', 'rdfformat']:
             if key in kwargs and kwargs[key]:
                 kwargs.setdefault('urlparams', {})
