@@ -135,14 +135,16 @@ class DebugApi(BaseApi):
     def get_all_debug_hostname(self, **kwargs):
         """Get all debug info from SENSE-SiteRM Endpoint"""
         sitename = self.getSitename(**kwargs)
-        params = "?"
+            # build params dict instead of string
+        params = {}
         for key in ["hostname", "state", "limit", "action"]:
             if key in kwargs and kwargs[key]:
-                params += f"{key}={kwargs[key]}&"
-        params += "debugvar=ALL&details=true"
+                params[key] = kwargs[key]
+        params["debugvar"] = "ALL"
+        params["details"] = True
         return self.client.makeRequest(sitename=sitename,
-                                       url=f"/api/{sitename}/debug{params}",
-                                       **{"verb": "GET", "data": {}})
+                                       url=f"/api/{sitename}/debug",
+                                       **{"verb": "GET", "urlparams": params})
 
     def delete_debug(self, **kwargs):
         """Delete debug info in SENSE-SiteRM Endpoint"""
