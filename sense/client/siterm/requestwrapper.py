@@ -121,6 +121,7 @@ class GitRepo():
         # Remove dir
         rmtree(repo, ignore_errors=True)
         # Save to cache file
+        os.makedirs(os.path.dirname(fname), exist_ok=True)
         with open(fname, 'w', encoding="utf-8") as fd:
             fd.write(json.dumps({"fes": siteUrls, "domainUrns": domainUrns}))
         return siteUrls, domainUrns

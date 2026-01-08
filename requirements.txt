@@ -8,3 +8,4 @@ urllib3
 jsonpath_ng
 certifi>=2022.12.7 
 httpx
+cryptography
