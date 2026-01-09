@@ -139,12 +139,16 @@ class RequestWrapper(ApiClient):
 
         ret = self._requestwrap(call_type, api_path, **kwargs)
 
-        if ret is not None and ret.status_code >= 400 and ret.headers.get("content-type") == "application/json":
-            json = ret.json()
-            exc = ValueError(f"Returned code {ret.status_code} with error {json.get('exception')}. Full json return: {str(json)}")
-            exc.json = json
-            raise exc
-
+        if ret is not None and ret.status_code >= 400:
+            if ret.headers.get("content-type") == "application/json":
+                json = ret.json()
+                exc = ValueError(f"Returned code {ret.status_code} with error {json.get('exception')}. Full json return: {str(json)}")
+                exc.json = json
+                raise exc
+            else:
+                exc = ValueError(f"Returned code {ret.status_code} with error {ret.text}")
+                exc.json = {"failure": ret.text}
+                raise exc
         # If request headers and return headers are json, return json
         # In case of failure - return text. Reason for doing so is to
         # avoid issue of diff interpretation of json in java and python
