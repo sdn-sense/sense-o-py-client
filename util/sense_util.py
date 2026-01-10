@@ -12,6 +12,13 @@ from sense.client.profile_api import ProfileApi
 from sense.client.discover_api import DiscoverApi
 from sense.common import bw2bps
 
+def output_handler(data, as_json=False, **kwargs):
+    if as_json:
+        print(json.dumps(data, default=str))
+    else:
+        print(data)
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -86,6 +93,8 @@ if __name__ == "__main__":
                         help="Add additional options")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="verbose mode providing extra output")
+    parser.add_argument("--json", action="store_true",
+                        help="output in json format")
 
     args = parser.parse_args()
 
@@ -405,7 +414,7 @@ if __name__ == "__main__":
         if args.domain and args.name:
             metadataAPI = MetadataApi()
             record = metadataAPI.get_metadata(domain=args.domain[0], name=args.name[0])
-            print(record)
+            output_handler(record, args.json)
         else:
             raise ValueError(f"Invalid metadata-get options: requires -d domain and -n name")
     elif args.metadata_post:
@@ -416,7 +425,7 @@ if __name__ == "__main__":
             template_file = open(args.file[0])
             data = json.load(template_file)
             record = metadataAPI.post_metadata(json.dumps(data), domain=args.domain[0], name=args.name[0]),
-            print(record)
+            output_handler(record, args.json)
         else:
             raise ValueError(f"Invalid metadata-post options: requires -d domain and -n name and -f data-file")
     elif args.metadata_update:
@@ -427,14 +436,14 @@ if __name__ == "__main__":
             template_file = open(args.file[0])
             data = json.load(template_file)
             record = metadataAPI.update_metadata(json.dumps(data), domain=args.domain[0], name=args.name[0]),
-            print(record)
+            output_handler(record, args.json)
         else:
             raise ValueError(f"Invalid metadata-update options: requires -d domain and -n name and -f data-file")
     elif args.metapolicy_get:
         if args.domain and args.name:
             metadataAPI = MetadataApi()
             record = metadataAPI.get_metadata_policies(domain=args.domain[0], name=args.name[0])
-            print(record)
+            output_handler(record, args.json)
         else:
             raise ValueError(f"Invalid metapolicy-get options: requires -d domain and -n name")
     elif args.metapolicy_update:
@@ -445,35 +454,35 @@ if __name__ == "__main__":
             template_file = open(args.file[0])
             data = json.load(template_file)
             record = metadataAPI.update_metadata_policy(json.dumps(data), domain=args.domain[0], name=args.name[0]),
-            print(record)
+            output_handler(record, args.json)
         else:
             raise ValueError(f"Invalid metapolicy-update options: requires -d domain and -n name and -f data-file")
     elif args.metapolicy_delete:
         if args.domain and args.name and args.policy:
             metadataAPI = MetadataApi()
             record = metadataAPI.delete_metadata_policy(domain=args.domain[0], name=args.name[0], policy=args.policy[0])
-            print(record)
+            output_handler(record, args.json)
         else:
             raise ValueError(f"Invalid metapolicy-delete options: requires --domain and --name and --policy")
     elif args.task_query:
         if args.assigned:
             taskAPI = TaskApi()
             record = taskAPI.get_tasks(assigned=args.assigned[0])
-            print(record)
+            output_handler(record, args.json)
         else:
             raise ValueError(f"Invalid task_query options: requires --assigned")
     elif args.task_agent_status:
         if args.assigned and args.state:
             taskAPI = TaskApi()
             record = taskAPI.get_tasks_agent_status(assigned=args.assigned[0], status=args.state[0])
-            print(record)
+            output_handler(record, args.json)
         else:
             raise ValueError(f"Invalid task_query options: requires --assigned and --state")
     elif args.task_get:
         if args.uuid:
             taskAPI = TaskApi()
             record = taskAPI.get_task(uuid=args.uuid[0])
-            print(record)
+            output_handler(record, args.json)
         else:
             raise ValueError(f"Invalid task_get options: requires --uuid")
     elif args.task_update:
@@ -487,14 +496,14 @@ if __name__ == "__main__":
             else:
                 data = None
             record = taskAPI.update_task(json.dumps(data), uuid=args.uuid[0], state=args.state[0])
-            print(record)
+            output_handler(record, args.json)
         else:
             raise ValueError(f"Invalid task_update options: requires --uuid and --state")
     elif args.task_delete:
         if args.uuid:
             taskAPI = TaskApi()
             record = taskAPI.delete_task(uuid=args.uuid[0])
-            print(record)
+            output_handler(record, args.json)
         else:
             raise ValueError(f"Invalid metapolicy-delete options: requires --domain and --name and --policy")
     elif args.address:
@@ -522,7 +531,7 @@ if __name__ == "__main__":
             response = addressApi.allocate_address(pool, atype, name, **params)
             if len(response) == 0 or "ERROR" in response:
                 raise ValueError(f"Address allocate failed with option `{args.address}`")
-            print(response)
+            output_handler(response, args.json)
         elif address_opts[0] == 'free':
             for i in range(1, len(address_opts)):
                 kv = address_opts[i].split('=')
@@ -536,7 +545,7 @@ if __name__ == "__main__":
             response = addressApi.free_address(pool, **params)
             if "ERROR" in response:
                 raise ValueError(f"Address free failed with option `{args.address}`")
-            print(response)
+            output_handler(response, args.json)
         elif address_opts[0] == 'affiliate':
             for i in range(1, len(address_opts)):
                 kv = address_opts[i].split('=')
@@ -554,7 +563,7 @@ if __name__ == "__main__":
             response = addressApi.affiliate_address(pool, uri, **params)
             if "ERROR" in response:
                 raise ValueError(f"Address affiliate failed with option `{args.address}`")
-            print(response)
+            output_handler(response, args.json)
         else:
             raise ValueError(f"Invalid address allocate/free/affiliate options")
     elif args.troubleshoot:
