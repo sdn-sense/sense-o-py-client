@@ -95,6 +95,8 @@ if __name__ == "__main__":
                         help="verbose mode providing extra output")
     parser.add_argument("--json", action="store_true",
                         help="output in json format")
+    parser.add_argument("--token", action="store_true",
+                        help="output an auth token")
 
     args = parser.parse_args()
 
@@ -611,3 +613,9 @@ if __name__ == "__main__":
                         del port['Allocations']
                     port['Remaining Capacity'] = str(avail_bw/1000000000) + ' gbps'
                 print(json.dumps(path_json, indent=2))
+    elif args.token:
+        from sense.client.apiclient import ApiClient
+        sense_auth = ApiClient(None)
+        print("TOKEN JSON: ", sense_auth.token)
+        print("\nBearer Token: ", sense_auth.token['access_token'])
+        print("\nRefresh Token: ", sense_auth.token['refresh_token'])
