@@ -291,7 +291,7 @@ if __name__ == "__main__":
         if args.uuid:
             profileApi = ProfileApi()
             profile = profileApi.profile_describe(args.uuid[0])
-            print(json.dumps(json.loads(profile), indent=2))
+            print(json.dumps(profile, indent=2))
         elif args.name:
             profileApi = ProfileApi()
             profile_id = profileApi.profile_describe(args.name[0], force='true', fetch='false')
