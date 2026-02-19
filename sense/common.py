@@ -66,6 +66,7 @@ def getConfig(configFile='/etc/sense-o-auth.yaml'):
         if not os.path.isfile(configFile):
             raise Exception(f"SENSE_AUTH_OVERRIDE env flag set, but file not found: {configFile}")
     elif not os.path.isfile(configFile):
+        # compatible with all platforms
         from pathlib import Path
         home_dir = Path.home()  # cross-platform, never returns None
         configFile = str(home_dir / ".sense-o-auth.yaml")
