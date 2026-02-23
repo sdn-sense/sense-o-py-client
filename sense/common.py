@@ -4,6 +4,7 @@ import os
 import inspect
 import time
 import json
+from pathlib import Path
 from yaml import safe_load as yload
 
 def functionwrapper(func):
@@ -66,7 +67,8 @@ def getConfig(configFile='/etc/sense-o-auth.yaml'):
         if not os.path.isfile(configFile):
             raise Exception(f"SENSE_AUTH_OVERRIDE env flag set, but file not found: {configFile}")
     elif not os.path.isfile(configFile):
-        configFile = os.getenv('HOME') + '/.sense-o-auth.yaml'
+        home_dir = Path.home()  # cross-platform, never returns None
+        configFile = str(home_dir / ".sense-o-auth.yaml")
         if not os.path.isfile(configFile):
             raise Exception(f"Config file not found: {configFile}")
     return loadYamlFile(configFile)
