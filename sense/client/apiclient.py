@@ -32,7 +32,10 @@ class ApiClient:
                                       allow_redirects=self.config['allow_redirects'],
                                       auth=(self.config['CLIENT_ID'], self.config['SECRET']),
                                       timeout=getHTTPTimeout())
-        self.token = json.loads(tokenResponse.text)
+        try:
+            self.token = json.loads(tokenResponse.text)
+        except json.JSONDecodeError as e:
+            raise Exception(f"Failed to get token. Bad credentials? Error: {tokenResponse.text}")
         if 'error' in self.token.keys() and 'error_description' in self.token.keys():
             raise Exception(f"Failed to get token. Bad credentials? Error: {self.token['error_description']}")
         self._setHeaders()
