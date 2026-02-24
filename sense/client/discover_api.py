@@ -310,6 +310,178 @@ class DiscoverApi():
         del params['kwargs']
         return self.client.request('GET', '/discover')
 
+    def discover_iri_facility_get(self, **kwargs):  # noqa: E501
+        """List facilities (IRI)  # noqa: E501
+
+        Returns a list of facilities from the /discover/iri/facility endpoint.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.discover_iri_facility_get(async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :return: list
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.discover_iri_facility_get_with_http_info(
+                **kwargs)  # noqa: E501
+        (data) = self.discover_iri_facility_get_with_http_info(
+            **kwargs)  # noqa: E501
+        return data
+
+    def discover_iri_facility_get_with_http_info(self, **kwargs):  # noqa: E501
+        """List facilities (IRI)  # noqa: E501
+
+        Returns a list of facilities from the /discover/iri/facility endpoint.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.discover_iri_facility_get_with_http_info(async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :return: list
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        all_params = []  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in params['kwargs'].items():
+            if key not in all_params:
+                raise TypeError(f"Got an unexpected keyword argument '{key}'"
+                                " to method discover_iri_facility_get")
+            params[key] = val
+        del params['kwargs']
+        return self.client.request('GET', '/discover/iri/facility')
+
+    def discover_iri_facility_get_with_name(self, name, **kwargs):  # noqa: E501
+        """Get facility (IRI) by name  # noqa: E501
+
+        Returns facility details from the /discover/iri/facility/{name} endpoint.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.discover_iri_facility_get_with_name(name, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str name: Facility name (required)
+        :return: object
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.discover_iri_facility_get_with_name_with_http_info(
+                name, **kwargs)  # noqa: E501
+        (data) = self.discover_iri_facility_get_with_name_with_http_info(
+            name, **kwargs)  # noqa: E501
+        return data
+
+    def discover_iri_facility_get_with_name_with_http_info(self, name, **kwargs):  # noqa: E501
+        """Get facility (IRI) by name  # noqa: E501
+
+        Returns facility details from the /discover/iri/facility/{name} endpoint.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.discover_iri_facility_get_with_name_with_http_info(name, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str name: Facility name (required)
+        :return: object
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        all_params = ['name']  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in params['kwargs'].items():
+            if key not in all_params:
+                raise TypeError(f"Got an unexpected keyword argument '{key}'"
+                                " to method discover_iri_facility_get_with_name")
+            params[key] = val
+        del params['kwargs']
+        # verify the required parameter 'name' is set
+        if ('name' not in params or params['name'] is None):
+            raise ValueError(
+                "Missing the required parameter `name` when calling `discover_iri_facility_get_with_name`"
+            )  # noqa: E501
+
+        return self.client.request('GET', f'/discover/iri/facility/{name}')
+
+    def discover_iri_facility_get_network(self, name, **kwargs):  # noqa: E501
+        """Get facility network (IRI) by name  # noqa: E501
+
+        Returns facility network details from the /discover/iri/facility/{name}/network endpoint.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.discover_iri_facility_get_network(name, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str name: Facility name (required)
+        :return: object
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.discover_iri_facility_get_network_with_http_info(
+                name, **kwargs)  # noqa: E501
+        (data) = self.discover_iri_facility_get_network_with_http_info(
+            name, **kwargs)  # noqa: E501
+        return data
+
+    def discover_iri_facility_get_network_with_http_info(self, name, **kwargs):  # noqa: E501
+        """Get facility network (IRI) by name  # noqa: E501
+
+        Returns facility network details from the /discover/iri/facility/{name}/network endpoint.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.discover_iri_facility_get_network_with_http_info(name, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str name: Facility name (required)
+        :return: object
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        all_params = ['name']  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in params['kwargs'].items():
+            if key not in all_params:
+                raise TypeError(f"Got an unexpected keyword argument '{key}'"
+                                " to method discover_iri_facility_get_network")
+            params[key] = val
+        del params['kwargs']
+        # verify the required parameter 'name' is set
+        if ('name' not in params or params['name'] is None):
+            raise ValueError(
+                "Missing the required parameter `name` when calling `discover_iri_facility_get_network`"
+            )  # noqa: E501
+
+        return self.client.request('GET', f'/discover/iri/facility/{name}/network')
+
     def discover_lookup_name_get(self, name, **kwargs):  # noqa: E501
         """Look up for domain / node / port URI by name  # noqa: E501
 
