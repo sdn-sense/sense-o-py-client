@@ -387,6 +387,24 @@ if __name__ == "__main__":
             if len(response) == 0 or "ERROR" in response:
                 raise ValueError(f"Discover query failed with option `{args.discover}`")
             print(str(response))
+        elif discover_opts[0] == 'iri_facility':
+            if len(discover_opts) == 2:
+                response = discoverApi.discover_iri_facility_get_with_name(discover_opts[1])
+            elif len(discover_opts) == 1:
+                response = discoverApi.discover_iri_facility_get()
+            else:
+                raise ValueError(f"Invalid discover query option `{args.discover}`")
+            if len(response) == 0 or "ERROR" in response:
+                raise ValueError(f"Discover query failed with option `{args.discover}`")
+            print(json.dumps(response, indent=2))
+        elif discover_opts[0] == 'iri_facility_network':
+            if len(discover_opts) == 2:
+                response = discoverApi.discover_iri_facility_get_network(discover_opts[1])
+            else:
+                raise ValueError(f"Invalid discover query option `{args.discover}`")
+            if len(response) == 0 or "ERROR" in response:
+                raise ValueError(f"Discover query failed with option `{args.discover}`")
+            print(json.dumps(response, indent=2))
         else:
             raise ValueError(f"Invalid discover query option `{args.discover}`")
     elif args.manifest:
