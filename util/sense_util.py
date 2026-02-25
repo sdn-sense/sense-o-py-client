@@ -12,6 +12,7 @@ from sense.client.profile_api import ProfileApi
 from sense.client.discover_api import DiscoverApi
 from sense.common import bw2bps
 
+
 def output_handler(data, as_json=False, **kwargs):
     if as_json:
         print(json.dumps(data, default=str))
@@ -69,6 +70,8 @@ if __name__ == "__main__":
                             help="Remove a task (requires --uuid)")
     operations.add_argument("--troubleshoot", action="store_true",
                             help="troubleshoot system or a service instance (requires --opt)")
+    parser.add_argument("--full", action="store_true",
+                        help="retrieve the full representation of some data")
     parser.add_argument("-f", "--file", action="append",
                         help="service intent request file")
     parser.add_argument("-u", "--uuid", action="append",
@@ -431,12 +434,15 @@ if __name__ == "__main__":
         else:
             raise ValueError(f"Invalid manifest options: require both -f josn_template and -u uuid")
     elif args.metadata_get:
-        if args.domain and args.name:
+        if args.domain:
             metadataAPI = MetadataApi()
-            record = metadataAPI.get_metadata(domain=args.domain[0], name=args.name[0])
+            record = metadataAPI.get_metadata(domain=args.domain[0], name=args.name[0],
+                                              full=args.full) if args.name else metadataAPI.get_metadata(
+                domain=args.domain[0])
+
             output_handler(record, args.json)
         else:
-            raise ValueError(f"Invalid metadata-get options: requires -d domain and -n name")
+            raise ValueError(f"Invalid metadata-get options: requires at least -d domain")
     elif args.metadata_post:
         if args.domain and args.name and args.file:
             metadataAPI = MetadataApi()
@@ -621,7 +627,7 @@ if __name__ == "__main__":
                 path_json = json.loads(response['jsonTemplate'])
                 for port in path_json['Path']:
                     avail_bw = bw2bps(port['Port Capacity'], port['Capacity Unit'])
-                    port['Port Capacity'] = str(avail_bw/1000000000) + ' gbps'
+                    port['Port Capacity'] = str(avail_bw / 1000000000) + ' gbps'
                     del port['Capacity Unit']
                     if 'Allocations' in port:
                         for alloc in port['Allocations']:
@@ -629,10 +635,11 @@ if __name__ == "__main__":
                             avail_bw -= alloc_bw
                     if not args.verbose:
                         del port['Allocations']
-                    port['Remaining Capacity'] = str(avail_bw/1000000000) + ' gbps'
+                    port['Remaining Capacity'] = str(avail_bw / 1000000000) + ' gbps'
                 print(json.dumps(path_json, indent=2))
     elif args.token:
         from sense.client.apiclient import ApiClient
+
         sense_auth = ApiClient(None)
         print("TOKEN JSON: ", sense_auth.token)
         print("\nBearer Token: ", sense_auth.token['access_token'])

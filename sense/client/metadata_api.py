@@ -10,6 +10,7 @@ from sense.common import classwrapper
 @classwrapper
 class MetadataApi():
     """Metadata API"""
+
     def __init__(self, req_wrapper=None):
         if req_wrapper is None:
             self.client = RequestWrapper()
@@ -30,7 +31,8 @@ class MetadataApi():
 
     def get_metadata_with_http_info(self, **kwargs):
         """Retrieve metadata by domain and name call"""
-        all_params = ['async_req', '_return_http_data_only', '_preload_content', '_request_timeout', 'domain', 'name']
+        all_params = ['async_req', '_return_http_data_only', '_preload_content', '_request_timeout', 'domain', 'name',
+                      'full']
         params = locals()
         for key, val in params['kwargs'].items():
             if key not in all_params:
@@ -38,7 +40,10 @@ class MetadataApi():
             params[key] = val
         del params['kwargs']
 
-        return self.client.request('GET', f'/meta/{kwargs["domain"]}/{kwargs["name"]}')
+        if kwargs.get('name'):
+            return self.client.request('GET', f'/meta/{kwargs["domain"]}/{kwargs["name"]}?full={kwargs["full"]}')
+        else:
+            return self.client.request('GET', f'/meta/{kwargs["domain"]}')
 
     def post_metadata(self, data, **kwargs):
         """Create metadata with domain and name"""
@@ -114,7 +119,8 @@ class MetadataApi():
         params = locals()
         for key, val in params['kwargs'].items():
             if key not in all_params:
-                raise TypeError(f"Got an unexpected keyword argument '{key}' to method get_metadata_policies_with_http_info")
+                raise TypeError(
+                    f"Got an unexpected keyword argument '{key}' to method get_metadata_policies_with_http_info")
             params[key] = val
         del params['kwargs']
 
@@ -134,7 +140,8 @@ class MetadataApi():
         params = locals()
         for key, val in params['kwargs'].items():
             if key not in all_params:
-                raise TypeError(f"Got an unexpected keyword argument '{key}' to method update_metadata_policy_with_http_info")
+                raise TypeError(
+                    f"Got an unexpected keyword argument '{key}' to method update_metadata_policy_with_http_info")
             params[key] = val
         del params['kwargs']
 
@@ -155,7 +162,8 @@ class MetadataApi():
         params = locals()
         for key, val in params['kwargs'].items():
             if key not in all_params:
-                raise TypeError(f"Got an unexpected keyword argument '{key}' to method delete_metadata_policy_with_http_info")
+                raise TypeError(
+                    f"Got an unexpected keyword argument '{key}' to method delete_metadata_policy_with_http_info")
             params[key] = val
         del params['kwargs']
 
