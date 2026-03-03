@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
-
-import argparse
 import os
 import json
-
 from sense.client.address_api import AddressApi
 from sense.client.metadata_api import MetadataApi
 from sense.client.task_api import TaskApi
@@ -11,7 +8,7 @@ from sense.client.workflow_combined_api import WorkflowCombinedApi
 from sense.client.profile_api import ProfileApi
 from sense.client.discover_api import DiscoverApi
 from sense.common import bw2bps
-
+import argparse
 
 def output_handler(data, as_json=False, **kwargs):
     if as_json:
