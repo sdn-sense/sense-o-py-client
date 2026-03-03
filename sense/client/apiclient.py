@@ -76,6 +76,10 @@ class ApiClient:
         if not foreign_token or not foreign_issuer:
             raise Exception("FOREIGN_TOKEN exchange requested but FOREIGN_TOKEN or FOREIGN_TOKEN_ISSUER is missing")
 
+        # Retain original token and propagate it on all subsequent requests
+        # via X-Original-Authorization.
+        self.config['X_ORIGINAL_AUTHORIZATION'] = f"Bearer {foreign_token}"
+
         data = {
             'client_id': self.config['CLIENT_ID'],
             'client_secret': self.config['SECRET'],
@@ -136,8 +140,19 @@ class ApiClient:
         """Set Headers for API calls"""
         if not self.token or not self.token.get('access_token'):
             raise Exception("No ACCESS_TOKEN available to set Authorization header")
-        self.config['headers'] = {'Content-type': f'application/{content}', 'Accept': f'application/{accept}',
-                                  'Authorization': 'Bearer ' + self.token['access_token']}
+
+        headers = {
+            'Content-type': f'application/{content}',
+            'Accept': f'application/{accept}',
+            'Authorization': 'Bearer ' + self.token['access_token']
+        }
+
+        # If a FOREIGN_TOKEN was used (token-exchange flow), include the original
+        # authorization on every request as requested.
+        if self.config.get('X_ORIGINAL_AUTHORIZATION'):
+            headers['X-Original-Authorization'] = self.config['X_ORIGINAL_AUTHORIZATION']
+
+        self.config['headers'] = headers
 
     def _refreshToken(self):
         """

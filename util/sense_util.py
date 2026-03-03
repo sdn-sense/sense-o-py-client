@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import json
+from sense.client.apiclient import ApiClient
 from sense.client.address_api import AddressApi
 from sense.client.metadata_api import MetadataApi
 from sense.client.task_api import TaskApi
@@ -18,7 +19,6 @@ def output_handler(data, as_json=False, **kwargs):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     operations = parser.add_mutually_exclusive_group()
     operations.add_argument("-cr", "--create", action="store_true",
@@ -639,8 +639,6 @@ if __name__ == "__main__":
                     port['Remaining Capacity'] = str(avail_bw / 1000000000) + ' gbps'
                 print(json.dumps(path_json, indent=2))
     elif args.token:
-        from sense.client.apiclient import ApiClient
-
         sense_auth = ApiClient(None)
         print("TOKEN JSON: ", sense_auth.token)
         print("\nBearer Token: ", sense_auth.token['access_token'])
