@@ -8,7 +8,6 @@ from sense.common import getConfig
 
 requests.packages.urllib3.disable_warnings()
 
-
 @classwrapper
 class ApiClient:
     """API Client for SENSE-0 get Token and Config"""
@@ -16,6 +15,10 @@ class ApiClient:
     def __init__(self, config):
         # For now only pass config file; Later all params
         self.config = config or getConfig()
+        if 'verify' not in self.config:
+            self.config['verify'] = False
+        if 'SECRET' not in self.config:
+            self.config['SECRET'] = None
         self._validateConfig()
         self._setDefaults()
         self.token = None
@@ -24,10 +27,18 @@ class ApiClient:
     def _initAuth(self):
         """
         Initialize auth in this order:
+          0) If FOREIGN_TOKEN + FOREIGN_TOKEN_ISSUER exist, exchange them for local ACCESS/REFRESH tokens.
           1) If ACCESS_TOKEN exists, use it.
           2) Else if REFRESH_TOKEN exists, refresh to get a new ACCESS_TOKEN.
           3) Else use USERNAME/PASSWORD to get tokens (last resort).
         """
+        foreign_token = self.config.get('FOREIGN_TOKEN')
+        foreign_issuer = self.config.get('FOREIGN_TOKEN_ISSUER')
+
+        if foreign_token and foreign_issuer:
+            self._exchangeForeignToken()
+            return
+
         access = self.config.get('ACCESS_TOKEN')
         refresh = self.config.get('REFRESH_TOKEN')
 
@@ -46,6 +57,56 @@ class ApiClient:
 
         # Last resort: password flow
         self._getToken()
+
+    def _exchangeForeignToken(self):
+        """
+        Exchange FOREIGN_TOKEN into local access_token + refresh_token using RFC 8693 token exchange.
+
+        Uses AUTH_ENDPOINT with a form-encoded body similar to:
+          grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+          subject_token={FOREIGN_TOKEN}
+          subject_issuer={FOREIGN_TOKEN_ISSUER}
+          subject_token_type=urn:ietf:params:oauth:token-type:access_token
+          audience={CLIENT_ID}
+          client_id={CLIENT_ID}
+          client_secret={SECRET}
+        """
+        foreign_token = self.config.get('FOREIGN_TOKEN')
+        foreign_issuer = self.config.get('FOREIGN_TOKEN_ISSUER')
+        if not foreign_token or not foreign_issuer:
+            raise Exception("FOREIGN_TOKEN exchange requested but FOREIGN_TOKEN or FOREIGN_TOKEN_ISSUER is missing")
+
+        data = {
+            'client_id': self.config['CLIENT_ID'],
+            'client_secret': self.config['SECRET'],
+            'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
+            'subject_token': foreign_token,
+            'subject_issuer': foreign_issuer,
+            'subject_token_type': 'urn:ietf:params:oauth:token-type:access_token',
+            'audience': self.config['CLIENT_ID'],
+        }
+
+        tokenResponse = requests.post(
+            self.config['AUTH_ENDPOINT'],
+            data=data,
+            verify=self.config['verify'],
+            allow_redirects=self.config['allow_redirects'],
+            timeout=getHTTPTimeout()
+        )
+
+        try:
+            self.token = json.loads(tokenResponse.text)
+        except json.JSONDecodeError:
+            raise Exception(f"Failed to exchange FOREIGN_TOKEN. Error: {tokenResponse.text}")
+
+        if 'error' in self.token and 'error_description' in self.token:
+            raise Exception(f"Failed to exchange FOREIGN_TOKEN: {self.token.get('error_description')}")
+
+        # Keep tokens in config for runtime use by refresh/init logic
+        self.config['ACCESS_TOKEN'] = self.token.get('access_token')
+        self.config['REFRESH_TOKEN'] = self.token.get('refresh_token')
+
+        self._setHeaders()
 
     def _getToken(self):
         """Get Token from SENSE-0 Auth API (password grant)"""
@@ -97,7 +158,7 @@ class ApiClient:
             if self.config.get('USERNAME') and self.config.get('PASSWORD'):
                 self._getToken()
                 return
-            raise Exception("No REFRESH_TOKEN available and no USERNAME/PASSWORD configured")
+            raise Exception("ACCESS_TOKEN invalid. No REFRESH_TOKEN available and no USERNAME/PASSWORD configured")
 
         data = {'grant_type': 'refresh_token',
                 'client_id': self.config['CLIENT_ID'],
@@ -139,12 +200,16 @@ class ApiClient:
                 raise Exception(f"Config parameter {param} is not set")
 
         # Must have at least one auth path configured:
+        # - FOREIGN_TOKEN + FOREIGN_TOKEN_ISSUER, or
         # - ACCESS_TOKEN, or
         # - REFRESH_TOKEN, or
         # - USERNAME+PASSWORD (last resort)
+        has_foreign = bool(self.config.get('FOREIGN_TOKEN')) and bool(self.config.get('FOREIGN_TOKEN_ISSUER'))
         has_access = bool(self.config.get('ACCESS_TOKEN'))
         has_refresh = bool(self.config.get('REFRESH_TOKEN'))
         has_userpass = bool(self.config.get('USERNAME')) and bool(self.config.get('PASSWORD'))
 
-        if not (has_access or has_refresh or has_userpass):
-            raise Exception("Config must include ACCESS_TOKEN or REFRESH_TOKEN or USERNAME+PASSWORD")
+        if not (has_foreign or has_access or has_refresh or has_userpass):
+            raise Exception(
+                "Config must include FOREIGN_TOKEN+FOREIGN_TOKEN_ISSUER or ACCESS_TOKEN or REFRESH_TOKEN or USERNAME+PASSWORD"
+            )

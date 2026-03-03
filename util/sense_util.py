@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
-
-import argparse
 import os
 import json
-
 from sense.client.address_api import AddressApi
 from sense.client.metadata_api import MetadataApi
 from sense.client.task_api import TaskApi
@@ -11,7 +8,7 @@ from sense.client.workflow_combined_api import WorkflowCombinedApi
 from sense.client.profile_api import ProfileApi
 from sense.client.discover_api import DiscoverApi
 from sense.common import bw2bps
-
+import argparse
 
 def output_handler(data, as_json=False, **kwargs):
     if as_json:
@@ -122,6 +119,7 @@ if __name__ == "__main__":
                 try:
                     response = workflowApi.instance_create(json.dumps(intent))
                 except ValueError:
+                    print(f"Failed to instantiate service instance: {workflowApi.si_uuid}")
                     workflowApi.instance_delete()
                     raise
             print(response)
@@ -139,6 +137,7 @@ if __name__ == "__main__":
                 response = workflowApi.instance_create(json.dumps(intent))
                 print(f"creating service instance: {response}")
             except ValueError:
+                print(f"Failed to instantiate service instance: {workflowApi.si_uuid}")
                 workflowApi.instance_delete()
                 raise
             workflowApi.instance_operate('provision', sync='true')
@@ -162,6 +161,7 @@ if __name__ == "__main__":
                 try:
                     response = workflowApi.instance_create(json.dumps(intent))
                 except ValueError:
+                    print(f"Failed to instantiate service instance: {workflowApi.si_uuid}")
                     workflowApi.instance_delete()
                     raise
             if not args.verbose and 'model' in response:
@@ -177,6 +177,7 @@ if __name__ == "__main__":
             try:
                 response = workflowApi.instance_create(json.dumps(intent))
             except ValueError:
+                print(f"Filed to instantiate service instance: {workflowApi.si_uuid}")
                 workflowApi.instance_delete()
                 raise
             if not args.verbose and 'model' in response:
