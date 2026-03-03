@@ -15,6 +15,10 @@ class ApiClient:
     def __init__(self, config):
         # For now only pass config file; Later all params
         self.config = config or getConfig()
+        if 'verify' not in self.config:
+            self.config['verify'] = False
+        if 'SECRET' not in self.config:
+            self.config['SECRET'] = None
         self._validateConfig()
         self._setDefaults()
         self.token = None

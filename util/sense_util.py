@@ -119,6 +119,7 @@ if __name__ == "__main__":
                 try:
                     response = workflowApi.instance_create(json.dumps(intent))
                 except ValueError:
+                    print(f"Failed to instantiate service instance: {workflowApi.si_uuid}")
                     workflowApi.instance_delete()
                     raise
             print(response)
@@ -136,6 +137,7 @@ if __name__ == "__main__":
                 response = workflowApi.instance_create(json.dumps(intent))
                 print(f"creating service instance: {response}")
             except ValueError:
+                print(f"Failed to instantiate service instance: {workflowApi.si_uuid}")
                 workflowApi.instance_delete()
                 raise
             workflowApi.instance_operate('provision', sync='true')
@@ -159,6 +161,7 @@ if __name__ == "__main__":
                 try:
                     response = workflowApi.instance_create(json.dumps(intent))
                 except ValueError:
+                    print(f"Failed to instantiate service instance: {workflowApi.si_uuid}")
                     workflowApi.instance_delete()
                     raise
             if not args.verbose and 'model' in response:
@@ -174,6 +177,7 @@ if __name__ == "__main__":
             try:
                 response = workflowApi.instance_create(json.dumps(intent))
             except ValueError:
+                print(f"Filed to instantiate service instance: {workflowApi.si_uuid}")
                 workflowApi.instance_delete()
                 raise
             if not args.verbose and 'model' in response:
