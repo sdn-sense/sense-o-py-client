@@ -39,7 +39,7 @@ class MetadataApi():
                 raise TypeError(f"Got an unexpected keyword argument '{key}' to method get_metadata_with_http_info")
             params[key] = val
         del params['kwargs']
-
+        kwargs.setdefault("full", "false") # TODO: We need to look in the future to redo all py client with automated tool generation, which solves these problems
         if kwargs.get('name'):
             return self.client.request('GET', f'/meta/{kwargs["domain"]}/{kwargs["name"]}?full={kwargs["full"]}')
         else:
