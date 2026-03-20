@@ -8,6 +8,7 @@ from sense.client.task_api import TaskApi
 from sense.client.workflow_combined_api import WorkflowCombinedApi
 from sense.client.profile_api import ProfileApi
 from sense.client.discover_api import DiscoverApi
+from sense.client.facility_space_api import FacilitySpaceApi
 from sense.common import bw2bps
 import argparse
 
@@ -65,6 +66,14 @@ if __name__ == "__main__":
                             help="Update a task status (requires --uuid --status). Can add an optional status JSON using --file.")
     operations.add_argument("--task-delete", action="store_true",
                             help="Remove a task (requires --uuid)")
+    operations.add_argument("--facility-space-get", action="store_true",
+                            help="Retrieve a facility space by UUID (requires --uuid)")
+    operations.add_argument("--facility-space-jobs-get", action="store_true",
+                            help="Retrieve jobs for a facility space (requires --uuid)")
+    operations.add_argument("--facility-space-job-get", action="store_true",
+                            help="Retrieve a specific facility space job (requires --uuid --job-id)")
+    operations.add_argument("--facility-space-job-action", action="store_true",
+                            help="Perform an action on a facility space job (requires --uuid --job-id --action)")
     operations.add_argument("--troubleshoot", action="store_true",
                             help="troubleshoot system or a service instance (requires --opt)")
     parser.add_argument("--full", action="store_true",
@@ -533,6 +542,34 @@ if __name__ == "__main__":
             output_handler(record, args.json)
         else:
             raise ValueError(f"Invalid metapolicy-delete options: requires --domain and --name and --policy")
+    elif args.facility_space_get:
+        if args.uuid:
+            facilitySpaceApi = FacilitySpaceApi()
+            record = facilitySpaceApi.facility_space_get(args.uuid[0])
+            output_handler(record, args.json)
+        else:
+            raise ValueError("Invalid facility-space-get options: requires --uuid")
+    elif args.facility_space_jobs_get:
+        if args.uuid:
+            facilitySpaceApi = FacilitySpaceApi()
+            record = facilitySpaceApi.facility_space_jobs_get(args.uuid[0])
+            output_handler(record, args.json)
+        else:
+            raise ValueError("Invalid facility-space-jobs-get options: requires --uuid")
+    elif args.facility_space_job_get:
+        if args.uuid and args.job_id:
+            facilitySpaceApi = FacilitySpaceApi()
+            record = facilitySpaceApi.facility_space_job_get(args.uuid[0], args.job_id[0])
+            output_handler(record, args.json)
+        else:
+            raise ValueError("Invalid facility-space-job-get options: requires --uuid and --job-id")
+    elif args.facility_space_job_action:
+        if args.uuid and args.job_id and args.action:
+            facilitySpaceApi = FacilitySpaceApi()
+            record = facilitySpaceApi.facility_space_job_action(args.uuid[0], args.job_id[0], args.action[0])
+            output_handler(record, args.json)
+        else:
+            raise ValueError("Invalid facility-space-job-action options: requires --uuid --job-id --action")
     elif args.address:
         addressApi = AddressApi()
         address_opts = args.address[0].split(",")
