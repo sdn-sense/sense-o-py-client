@@ -147,9 +147,12 @@ class ApiClient:
             'Authorization': 'Bearer ' + self.token['access_token']
         }
 
-        # If a FOREIGN_TOKEN was used (token-exchange flow), include the original
-        # authorization on every request as requested.
-        if self.config.get('X_ORIGINAL_AUTHORIZATION'):
+        # If IRI_API_TOKEN is configured, use it for X-Original-Authorization.
+        # Otherwise, if a FOREIGN_TOKEN was used (token-exchange flow), include the
+        # original authorization on every request.
+        if self.config.get('IRI_API_TOKEN'):
+            headers['X-Original-Authorization'] = f"Bearer {self.config['IRI_API_TOKEN']}"
+        elif self.config.get('X_ORIGINAL_AUTHORIZATION'):
             headers['X-Original-Authorization'] = self.config['X_ORIGINAL_AUTHORIZATION']
 
         self.config['headers'] = headers
