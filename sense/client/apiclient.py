@@ -12,17 +12,23 @@ requests.packages.urllib3.disable_warnings()
 class ApiClient:
     """API Client for SENSE-0 get Token and Config"""
 
-    def __init__(self, config):
+    def __init__(self, config, noauth=False):
         # For now only pass config file; Later all params
+        self.noauth = noauth
         self.config = config or getConfig()
         if 'verify' not in self.config:
             self.config['verify'] = False
         if 'SECRET' not in self.config:
             self.config['SECRET'] = None
-        self._validateConfig()
-        self._setDefaults()
-        self.token = None
-        self._initAuth()
+        if self.noauth:
+            self._setDefaults()
+            self.token = None
+            self._setNoAuthHeaders()
+        else:
+            self._validateConfig()
+            self._setDefaults()
+            self.token = None
+            self._initAuth()
 
     def _initAuth(self):
         """
@@ -135,6 +141,13 @@ class ApiClient:
         self.config['REFRESH_TOKEN'] = self.token.get('refresh_token')
 
         self._setHeaders()
+
+    def _setNoAuthHeaders(self, content='json', accept='json'):
+        """Set Headers for API calls without authentication"""
+        self.config['headers'] = {
+            'Content-type': f'application/{content}',
+            'Accept': f'application/{accept}',
+        }
 
     def _setHeaders(self, content='json', accept='json'):
         """Set Headers for API calls"""

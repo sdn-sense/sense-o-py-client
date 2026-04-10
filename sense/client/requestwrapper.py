@@ -17,10 +17,10 @@ sys.path.insert(0, '..')
 @classwrapper
 class RequestWrapper(ApiClient):
     """Request Wrapper for SENSE-0 API (GET, PUT, POST, DELETE)"""
-    def __init__(self, config=None):
+    def __init__(self, config=None, noauth=False):
         self.logger = None
         self.__setdebug()
-        super(RequestWrapper, self).__init__(config)
+        super(RequestWrapper, self).__init__(config, noauth=noauth)
 
     def __setdebug(self):
         """Set Debug and log all http call details to console"""
@@ -48,7 +48,7 @@ class RequestWrapper(ApiClient):
                            headers=self.config['headers'],
                            verify=self.config['verify'],
                            params=params, timeout=getHTTPTimeout())
-        if out.status_code == 401:
+        if out.status_code == 401 and not self.noauth:
             self._refreshToken()
             out = requests.get(url,
                                headers=self.config['headers'],
@@ -63,7 +63,7 @@ class RequestWrapper(ApiClient):
                            verify=self.config['verify'],
                            data=data,
                            params=params, timeout=getHTTPTimeout())
-        if out.status_code == 401:
+        if out.status_code == 401 and not self.noauth:
             self._refreshToken()
             out = requests.put(url,
                                headers=self.config['headers'],
@@ -79,7 +79,7 @@ class RequestWrapper(ApiClient):
                             verify=self.config['verify'],
                             data=data,
                             params=params, timeout=getHTTPTimeout())
-        if out.status_code == 401:
+        if out.status_code == 401 and not self.noauth:
             self._refreshToken()
             out = requests.post(url,
                                 headers=self.config['headers'],
@@ -94,7 +94,7 @@ class RequestWrapper(ApiClient):
                               headers=self.config['headers'],
                               verify=self.config['verify'],
                               params=params, timeout=getHTTPTimeout())
-        if out.status_code == 401:
+        if out.status_code == 401 and not self.noauth:
             self._refreshToken()
             out = requests.delete(url,
                                   headers=self.config['headers'],

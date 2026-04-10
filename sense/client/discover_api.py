@@ -19,9 +19,9 @@ class DiscoverApi():
     Do not edit the class manually.
     Ref: https://github.com/swagger-api/swagger-codegen
     """
-    def __init__(self, req_wrapper=None):
+    def __init__(self, req_wrapper=None, noauth=False):
         if req_wrapper is None:
-            self.client = RequestWrapper()
+            self.client = RequestWrapper(noauth=noauth)
         else:
             self.client = req_wrapper
 

@@ -106,6 +106,8 @@ if __name__ == "__main__":
                         help="output in json format")
     parser.add_argument("--token", action="store_true",
                         help="output an auth token")
+    parser.add_argument("--no-auth", action="store_true",
+                        help="skip authentication (only applies to --discover)")
 
     args = parser.parse_args()
 
@@ -328,7 +330,7 @@ if __name__ == "__main__":
         else:
             raise ValueError("Missing the required parameter `uuid` ")
     elif args.discover:
-        discoverApi = DiscoverApi()
+        discoverApi = DiscoverApi(noauth=args.no_auth)
         discover_opts = args.discover[0].split("=")
         if discover_opts[0] == 'domain_list':
             if len(discover_opts) != 1:
