@@ -313,7 +313,7 @@ class DiscoverApi():
     def discover_iri_facility_get(self, **kwargs):  # noqa: E501
         """List facilities (IRI)  # noqa: E501
 
-        Returns a list of facilities from the /discover/iri/facility endpoint.  # noqa: E501
+        Returns a list of facilities from the /amsc-iro/resource/facility endpoint.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.discover_iri_facility_get(async_req=True)
@@ -335,7 +335,7 @@ class DiscoverApi():
     def discover_iri_facility_get_with_http_info(self, **kwargs):  # noqa: E501
         """List facilities (IRI)  # noqa: E501
 
-        Returns a list of facilities from the /discover/iri/facility endpoint.  # noqa: E501
+        Returns a list of facilities from the /amsc-iro/resource/facility endpoint.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.discover_iri_facility_get_with_http_info(async_req=True)
@@ -360,12 +360,12 @@ class DiscoverApi():
                                 " to method discover_iri_facility_get")
             params[key] = val
         del params['kwargs']
-        return self.client.request('GET', '/discover/iri/facility')
+        return self.client.request('GET', '/amsc-iro/resource/facility')
 
     def discover_iri_facility_get_with_name(self, name, **kwargs):  # noqa: E501
         """Get facility (IRI) by name  # noqa: E501
 
-        Returns facility details from the /discover/iri/facility/{name} endpoint.  # noqa: E501
+        Returns facility details from the /amsc-iro/resource/facility/{name} endpoint.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.discover_iri_facility_get_with_name(name, async_req=True)
@@ -388,7 +388,7 @@ class DiscoverApi():
     def discover_iri_facility_get_with_name_with_http_info(self, name, **kwargs):  # noqa: E501
         """Get facility (IRI) by name  # noqa: E501
 
-        Returns facility details from the /discover/iri/facility/{name} endpoint.  # noqa: E501
+        Returns facility details from the /amsc-iro/resource/facility/{name} endpoint.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.discover_iri_facility_get_with_name_with_http_info(name, async_req=True)
@@ -420,12 +420,12 @@ class DiscoverApi():
                 "Missing the required parameter `name` when calling `discover_iri_facility_get_with_name`"
             )  # noqa: E501
 
-        return self.client.request('GET', f'/discover/iri/facility/{name}')
+        return self.client.request('GET', f'/amsc-iro/resource/facility/{name}')
 
     def discover_iri_facility_get_network(self, name, **kwargs):  # noqa: E501
         """Get facility network (IRI) by name  # noqa: E501
 
-        Returns facility network details from the /discover/iri/facility/{name}/network endpoint.  # noqa: E501
+        Returns facility network details from the /amsc-iro/resource/facility/{name}/network endpoint.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.discover_iri_facility_get_network(name, async_req=True)
@@ -448,7 +448,7 @@ class DiscoverApi():
     def discover_iri_facility_get_network_with_http_info(self, name, **kwargs):  # noqa: E501
         """Get facility network (IRI) by name  # noqa: E501
 
-        Returns facility network details from the /discover/iri/facility/{name}/network endpoint.  # noqa: E501
+        Returns facility network details from the /amsc-iro/resource/facility/{name}/network endpoint.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.discover_iri_facility_get_network_with_http_info(name, async_req=True)
@@ -480,7 +480,7 @@ class DiscoverApi():
                 "Missing the required parameter `name` when calling `discover_iri_facility_get_network`"
             )  # noqa: E501
 
-        return self.client.request('GET', f'/discover/iri/facility/{name}/network')
+        return self.client.request('GET', f'/amsc-iro/resource/facility/{name}/network')
 
     def discover_lookup_name_get(self, name, **kwargs):  # noqa: E501
         """Look up for domain / node / port URI by name  # noqa: E501
