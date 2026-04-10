@@ -8,7 +8,6 @@ from sense.common import getConfig
 
 requests.packages.urllib3.disable_warnings()
 
-
 @classwrapper
 class ApiClient:
     """API Client for SENSE-0 get Token and Config"""
@@ -16,13 +15,105 @@ class ApiClient:
     def __init__(self, config):
         # For now only pass config file; Later all params
         self.config = config or getConfig()
+        if 'verify' not in self.config:
+            self.config['verify'] = False
+        if 'SECRET' not in self.config:
+            self.config['SECRET'] = None
         self._validateConfig()
         self._setDefaults()
         self.token = None
+        self._initAuth()
+
+    def _initAuth(self):
+        """
+        Initialize auth in this order:
+          0) If FOREIGN_TOKEN + FOREIGN_TOKEN_ISSUER exist, exchange them for local ACCESS/REFRESH tokens.
+          1) If ACCESS_TOKEN exists, use it.
+          2) Else if REFRESH_TOKEN exists, refresh to get a new ACCESS_TOKEN.
+          3) Else use USERNAME/PASSWORD to get tokens (last resort).
+        """
+        foreign_token = self.config.get('FOREIGN_TOKEN')
+        foreign_issuer = self.config.get('FOREIGN_TOKEN_ISSUER')
+
+        if foreign_token and foreign_issuer:
+            self._exchangeForeignToken()
+            return
+
+        access = self.config.get('ACCESS_TOKEN')
+        refresh = self.config.get('REFRESH_TOKEN')
+
+        if access:
+            self.token = {
+                'access_token': access,
+                'refresh_token': refresh
+            }
+            self._setHeaders()
+            return
+
+        if refresh:
+            # Try to obtain a new access token via refresh-token grant
+            self._refreshToken()
+            return
+
+        # Last resort: password flow
         self._getToken()
 
+    def _exchangeForeignToken(self):
+        """
+        Exchange FOREIGN_TOKEN into local access_token + refresh_token using RFC 8693 token exchange.
+
+        Uses AUTH_ENDPOINT with a form-encoded body similar to:
+          grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+          subject_token={FOREIGN_TOKEN}
+          subject_issuer={FOREIGN_TOKEN_ISSUER}
+          subject_token_type=urn:ietf:params:oauth:token-type:access_token
+          audience={CLIENT_ID}
+          client_id={CLIENT_ID}
+          client_secret={SECRET}
+        """
+        foreign_token = self.config.get('FOREIGN_TOKEN')
+        foreign_issuer = self.config.get('FOREIGN_TOKEN_ISSUER')
+        if not foreign_token or not foreign_issuer:
+            raise Exception("FOREIGN_TOKEN exchange requested but FOREIGN_TOKEN or FOREIGN_TOKEN_ISSUER is missing")
+
+        # Retain original token and propagate it on all subsequent requests
+        # via X-Original-Authorization.
+        self.config['X_ORIGINAL_AUTHORIZATION'] = f"Bearer {foreign_token}"
+
+        data = {
+            'client_id': self.config['CLIENT_ID'],
+            'client_secret': self.config['SECRET'],
+            'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
+            'subject_token': foreign_token,
+            'subject_issuer': foreign_issuer,
+            'subject_token_type': 'urn:ietf:params:oauth:token-type:access_token',
+            'audience': self.config['CLIENT_ID'],
+        }
+
+        tokenResponse = requests.post(
+            self.config['AUTH_ENDPOINT'],
+            data=data,
+            verify=self.config['verify'],
+            allow_redirects=self.config['allow_redirects'],
+            timeout=getHTTPTimeout()
+        )
+
+        try:
+            self.token = json.loads(tokenResponse.text)
+        except json.JSONDecodeError:
+            raise Exception(f"Failed to exchange FOREIGN_TOKEN. Error: {tokenResponse.text}")
+
+        if 'error' in self.token and 'error_description' in self.token:
+            raise Exception(f"Failed to exchange FOREIGN_TOKEN: {self.token.get('error_description')}")
+
+        # Keep tokens in config for runtime use by refresh/init logic
+        self.config['ACCESS_TOKEN'] = self.token.get('access_token')
+        self.config['REFRESH_TOKEN'] = self.token.get('refresh_token')
+
+        self._setHeaders()
+
     def _getToken(self):
-        """Get Token from SENSE-0 Auth API"""
+        """Get Token from SENSE-0 Auth API (password grant)"""
         data = {'grant_type': 'password',
                 'username': self.config['USERNAME'],
                 'password': self.config['PASSWORD']}
@@ -38,29 +129,78 @@ class ApiClient:
             raise Exception(f"Failed to get token. Bad credentials? Error: {tokenResponse.text}")
         if 'error' in self.token.keys() and 'error_description' in self.token.keys():
             raise Exception(f"Failed to get token. Bad credentials? Error: {self.token['error_description']}")
+
+        # Keep tokens in config for runtime use by refresh/init logic
+        self.config['ACCESS_TOKEN'] = self.token.get('access_token')
+        self.config['REFRESH_TOKEN'] = self.token.get('refresh_token')
+
         self._setHeaders()
 
     def _setHeaders(self, content='json', accept='json'):
         """Set Headers for API calls"""
-        self.config['headers'] = {'Content-type': f'application/{content}', 'Accept': f'application/{accept}',
-                                  'Authorization': 'Bearer ' + self.token['access_token']}
+        if not self.token or not self.token.get('access_token'):
+            raise Exception("No ACCESS_TOKEN available to set Authorization header")
+
+        headers = {
+            'Content-type': f'application/{content}',
+            'Accept': f'application/{accept}',
+            'Authorization': 'Bearer ' + self.token['access_token']
+        }
+
+        # If IRI_API_TOKEN is configured, use it for X-Original-Authorization.
+        # Otherwise, if a FOREIGN_TOKEN was used (token-exchange flow), include the
+        # original authorization on every request.
+        if self.config.get('IRI_API_TOKEN'):
+            headers['X-Original-Authorization'] = f"Bearer {self.config['IRI_API_TOKEN']}"
+        elif self.config.get('X_ORIGINAL_AUTHORIZATION'):
+            headers['X-Original-Authorization'] = self.config['X_ORIGINAL_AUTHORIZATION']
+
+        self.config['headers'] = headers
 
     def _refreshToken(self):
-        """Refresh Token from SENSE-0 Auth API"""
+        """
+        Refresh Token from SENSE-0 Auth API.
+
+        If refresh fails:
+          - fall back to USERNAME/PASSWORD (if present),
+          - otherwise raise an exception.
+        """
+        refresh_token = None
+        if self.token and self.token.get('refresh_token'):
+            refresh_token = self.token.get('refresh_token')
+        if not refresh_token:
+            refresh_token = self.config.get('REFRESH_TOKEN')
+
+        if not refresh_token:
+            # No refresh token available; last resort to password flow if possible
+            if self.config.get('USERNAME') and self.config.get('PASSWORD'):
+                self._getToken()
+                return
+            raise Exception("ACCESS_TOKEN invalid. No REFRESH_TOKEN available and no USERNAME/PASSWORD configured")
+
         data = {'grant_type': 'refresh_token',
                 'client_id': self.config['CLIENT_ID'],
                 'client_secret': self.config['SECRET'],
-                'refresh_token': self.token['refresh_token']}
+                'refresh_token': refresh_token}
         tokenResponse = requests.post(self.config['AUTH_ENDPOINT'],
                                       data=data,
                                       verify=self.config['verify'],
                                       allow_redirects=self.config['allow_redirects'],
                                       timeout=getHTTPTimeout())
         self.token = json.loads(tokenResponse.text)
+
         if 'error' in self.token.keys() and 'error_description' in self.token.keys():
-            self._getToken()
-        else:
-            self._setHeaders()
+            # Refresh failed -> last resort
+            if self.config.get('USERNAME') and self.config.get('PASSWORD'):
+                self._getToken()
+                return
+            raise Exception(f"Failed to refresh token and no USERNAME/PASSWORD configured: {self.token.get('error_description')}")
+
+        # Keep tokens in config for runtime use
+        self.config['ACCESS_TOKEN'] = self.token.get('access_token')
+        self.config['REFRESH_TOKEN'] = self.token.get('refresh_token', refresh_token)
+
+        self._setHeaders()
 
     def _setDefaults(self):
         """Set Defaults for Config"""
@@ -72,6 +212,22 @@ class ApiClient:
 
     def _validateConfig(self):
         """Validate Config"""
-        for param in ['AUTH_ENDPOINT', 'API_ENDPOINT', 'USERNAME', 'PASSWORD', 'CLIENT_ID', 'SECRET']:
+        # Always required
+        for param in ['AUTH_ENDPOINT', 'API_ENDPOINT', 'CLIENT_ID', 'SECRET']:
             if param not in self.config.keys():
                 raise Exception(f"Config parameter {param} is not set")
+
+        # Must have at least one auth path configured:
+        # - FOREIGN_TOKEN + FOREIGN_TOKEN_ISSUER, or
+        # - ACCESS_TOKEN, or
+        # - REFRESH_TOKEN, or
+        # - USERNAME+PASSWORD (last resort)
+        has_foreign = bool(self.config.get('FOREIGN_TOKEN')) and bool(self.config.get('FOREIGN_TOKEN_ISSUER'))
+        has_access = bool(self.config.get('ACCESS_TOKEN'))
+        has_refresh = bool(self.config.get('REFRESH_TOKEN'))
+        has_userpass = bool(self.config.get('USERNAME')) and bool(self.config.get('PASSWORD'))
+
+        if not (has_foreign or has_access or has_refresh or has_userpass):
+            raise Exception(
+                "Config must include FOREIGN_TOKEN+FOREIGN_TOKEN_ISSUER or ACCESS_TOKEN or REFRESH_TOKEN or USERNAME+PASSWORD"
+            )

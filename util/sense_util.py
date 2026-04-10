@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-
-import argparse
 import os
 import json
-
+from sense.client.apiclient import ApiClient
 from sense.client.address_api import AddressApi
 from sense.client.metadata_api import MetadataApi
 from sense.client.task_api import TaskApi
 from sense.client.workflow_combined_api import WorkflowCombinedApi
 from sense.client.profile_api import ProfileApi
 from sense.client.discover_api import DiscoverApi
+from sense.client.facility_space_api import FacilitySpaceApi
 from sense.common import bw2bps
+import argparse
 
 def output_handler(data, as_json=False, **kwargs):
     if as_json:
@@ -20,7 +20,6 @@ def output_handler(data, as_json=False, **kwargs):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     operations = parser.add_mutually_exclusive_group()
     operations.add_argument("-cr", "--create", action="store_true",
@@ -67,8 +66,18 @@ if __name__ == "__main__":
                             help="Update a task status (requires --uuid --status). Can add an optional status JSON using --file.")
     operations.add_argument("--task-delete", action="store_true",
                             help="Remove a task (requires --uuid)")
+    operations.add_argument("--facility-space-get", action="store_true",
+                            help="Retrieve a facility space by UUID (requires --uuid)")
+    operations.add_argument("--facility-space-jobs-get", action="store_true",
+                            help="Retrieve jobs for a facility space (requires --uuid)")
+    operations.add_argument("--facility-space-job-get", action="store_true",
+                            help="Retrieve a specific facility space job (requires --uuid --job-id)")
+    operations.add_argument("--facility-space-job-action", action="store_true",
+                            help="Perform an action on a facility space job (requires --uuid --job-id --action)")
     operations.add_argument("--troubleshoot", action="store_true",
                             help="troubleshoot system or a service instance (requires --opt)")
+    parser.add_argument("--full", action="store_true",
+                        help="retrieve the full representation of some data")
     parser.add_argument("-f", "--file", action="append",
                         help="service intent request file")
     parser.add_argument("-u", "--uuid", action="append",
@@ -119,6 +128,7 @@ if __name__ == "__main__":
                 try:
                     response = workflowApi.instance_create(json.dumps(intent))
                 except ValueError:
+                    print(f"Failed to instantiate service instance: {workflowApi.si_uuid}")
                     workflowApi.instance_delete()
                     raise
             print(response)
@@ -136,6 +146,7 @@ if __name__ == "__main__":
                 response = workflowApi.instance_create(json.dumps(intent))
                 print(f"creating service instance: {response}")
             except ValueError:
+                print(f"Failed to instantiate service instance: {workflowApi.si_uuid}")
                 workflowApi.instance_delete()
                 raise
             workflowApi.instance_operate('provision', sync='true')
@@ -159,6 +170,7 @@ if __name__ == "__main__":
                 try:
                     response = workflowApi.instance_create(json.dumps(intent))
                 except ValueError:
+                    print(f"Failed to instantiate service instance: {workflowApi.si_uuid}")
                     workflowApi.instance_delete()
                     raise
             if not args.verbose and 'model' in response:
@@ -174,6 +186,7 @@ if __name__ == "__main__":
             try:
                 response = workflowApi.instance_create(json.dumps(intent))
             except ValueError:
+                print(f"Filed to instantiate service instance: {workflowApi.si_uuid}")
                 workflowApi.instance_delete()
                 raise
             if not args.verbose and 'model' in response:
@@ -431,12 +444,15 @@ if __name__ == "__main__":
         else:
             raise ValueError(f"Invalid manifest options: require both -f josn_template and -u uuid")
     elif args.metadata_get:
-        if args.domain and args.name:
+        if args.domain:
             metadataAPI = MetadataApi()
-            record = metadataAPI.get_metadata(domain=args.domain[0], name=args.name[0])
+            record = metadataAPI.get_metadata(domain=args.domain[0], name=args.name[0],
+                                              full=args.full) if args.name else metadataAPI.get_metadata(
+                domain=args.domain[0])
+
             output_handler(record, args.json)
         else:
-            raise ValueError(f"Invalid metadata-get options: requires -d domain and -n name")
+            raise ValueError(f"Invalid metadata-get options: requires at least -d domain")
     elif args.metadata_post:
         if args.domain and args.name and args.file:
             metadataAPI = MetadataApi()
@@ -526,6 +542,34 @@ if __name__ == "__main__":
             output_handler(record, args.json)
         else:
             raise ValueError(f"Invalid metapolicy-delete options: requires --domain and --name and --policy")
+    elif args.facility_space_get:
+        if args.uuid:
+            facilitySpaceApi = FacilitySpaceApi()
+            record = facilitySpaceApi.facility_space_get(args.uuid[0])
+            output_handler(record, args.json)
+        else:
+            raise ValueError("Invalid facility-space-get options: requires --uuid")
+    elif args.facility_space_jobs_get:
+        if args.uuid:
+            facilitySpaceApi = FacilitySpaceApi()
+            record = facilitySpaceApi.facility_space_jobs_get(args.uuid[0])
+            output_handler(record, args.json)
+        else:
+            raise ValueError("Invalid facility-space-jobs-get options: requires --uuid")
+    elif args.facility_space_job_get:
+        if args.uuid and args.job_id:
+            facilitySpaceApi = FacilitySpaceApi()
+            record = facilitySpaceApi.facility_space_job_get(args.uuid[0], args.job_id[0])
+            output_handler(record, args.json)
+        else:
+            raise ValueError("Invalid facility-space-job-get options: requires --uuid and --job-id")
+    elif args.facility_space_job_action:
+        if args.uuid and args.job_id and args.action:
+            facilitySpaceApi = FacilitySpaceApi()
+            record = facilitySpaceApi.facility_space_job_action(args.uuid[0], args.job_id[0], args.action[0])
+            output_handler(record, args.json)
+        else:
+            raise ValueError("Invalid facility-space-job-action options: requires --uuid --job-id --action")
     elif args.address:
         addressApi = AddressApi()
         address_opts = args.address[0].split(",")
@@ -621,7 +665,7 @@ if __name__ == "__main__":
                 path_json = json.loads(response['jsonTemplate'])
                 for port in path_json['Path']:
                     avail_bw = bw2bps(port['Port Capacity'], port['Capacity Unit'])
-                    port['Port Capacity'] = str(avail_bw/1000000000) + ' gbps'
+                    port['Port Capacity'] = str(avail_bw / 1000000000) + ' gbps'
                     del port['Capacity Unit']
                     if 'Allocations' in port:
                         for alloc in port['Allocations']:
@@ -629,10 +673,9 @@ if __name__ == "__main__":
                             avail_bw -= alloc_bw
                     if not args.verbose:
                         del port['Allocations']
-                    port['Remaining Capacity'] = str(avail_bw/1000000000) + ' gbps'
+                    port['Remaining Capacity'] = str(avail_bw / 1000000000) + ' gbps'
                 print(json.dumps(path_json, indent=2))
     elif args.token:
-        from sense.client.apiclient import ApiClient
         sense_auth = ApiClient(None)
         print("TOKEN JSON: ", sense_auth.token)
         print("\nBearer Token: ", sense_auth.token['access_token'])
