@@ -95,3 +95,9 @@ class SenseProvider(Provider):
         self._init_client()
         handler = self._get_handler(resource)
         handler.delete_resource(resource=resource)
+
+    def do_wait_for_delete_resource(self, *, resource: dict):
+        assert resource[Constants.RES_TYPE] in self.supported_resources
+        self._init_client()
+        handler = self._get_handler(resource)
+        handler.do_wait_for_delete_resource(resource=resource)

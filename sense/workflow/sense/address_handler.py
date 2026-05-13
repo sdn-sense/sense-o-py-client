@@ -172,3 +172,6 @@ class AddressHandler:
         logger.info(f'Deleting resource {serv_name} using {serv.address}')
         serv.free_address()
         self.resource_listener.on_deleted(source=self.provider, provider=self.provider, resource=serv)
+
+    def do_wait_for_delete_resource(self, *, resource: dict):
+        pass
