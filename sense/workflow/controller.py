@@ -275,7 +275,6 @@ class Controller:
 
         temp = self.resources
         temp.reverse()
-
         for resource in temp:
             if resource.label in resource_state_map:
                 key = resource.provider.label
@@ -285,30 +284,67 @@ class Controller:
                 provider_resource_map[key].append(resource)
                 resource.attributes[Constants.SAVED_STATES] = resource_state_map[resource.label]
 
+        temp = [r for r in temp if r.label in resource_state_map or r.label in failed_resources]
+        depends_on_resource_labels = set()
+        for resource in temp:
+            external_dependencies = resource.attributes.get(Constants.EXTERNAL_DEPENDENCIES, [])
+            for dependency in external_dependencies:
+                depends_on_resource_labels.add(dependency.resource.label)
+
+        free_resources_labels = set()
+        for resource in temp:
+            if resource.label not in depends_on_resource_labels:
+                free_resources_labels.add(resource.label)
+
         remaining_resources = list()
         skip_resources = set()
-
         for resource in temp:
-            if resource.label not in resource_state_map and resource.label not in failed_resources:
+            if resource.label in free_resources_labels:
                 continue
-
             provider_label = resource.provider.label
             provider = self.provider_factory.get_provider(label=provider_label)
             external_states = resource.attributes.get(Constants.EXTERNAL_DEPENDENCY_STATES, list())
-
             if resource.label in skip_resources:
                 self.logger.warning(f"Skipping deleting resource: {resource} with {provider_label}")
                 remaining_resources.append(resource)
                 skip_resources.update([external_state.label for external_state in external_states])
                 continue
-
             try:
                 provider.delete_resource(resource=resource.attributes)
+                provider.wait_for_delete_resource(resource=resource.attributes)
             except Exception as e:
                 self.logger.warning(f"Exception occurred while deleting resource: {e} using {provider_label}",
                                     exc_info=True)
                 remaining_resources.append(resource)
                 skip_resources.update([external_state.label for external_state in external_states])
+                exceptions.append(e)
+
+        deleted_resources = []
+        for resource in temp:
+            if resource.label in free_resources_labels:
+                provider_label = resource.provider.label
+                provider = self.provider_factory.get_provider(label=provider_label)
+                external_states = resource.attributes.get(Constants.EXTERNAL_DEPENDENCY_STATES, list())
+                if  [es.label for es in external_states if es.label in skip_resources]:
+                    continue
+                try:
+                    provider.delete_resource(resource=resource.attributes)
+                    deleted_resources.append(resource)
+                except Exception as e:
+                    self.logger.warning(f"Exception occurred while deleting resource: {e} using {provider_label}",
+                                        exc_info=True)
+                    remaining_resources.append(resource)
+                    exceptions.append(e)
+
+        for resource in deleted_resources:
+            provider_label = resource.provider.label
+            provider = self.provider_factory.get_provider(label=provider_label)
+            try:
+                provider.wait_for_delete_resource(resource=resource.attributes)
+            except Exception as e:
+                self.logger.warning(f"Exception while waiting on deleted resource: {e} using {provider_label}",
+                                    exc_info=True)
+                remaining_resources.append(resource)
                 exceptions.append(e)
 
         if not remaining_resources:

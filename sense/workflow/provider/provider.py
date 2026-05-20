@@ -294,6 +294,15 @@ class Provider(ABC):
             self.failed[label] = 'DELETE'
             raise e
 
+    def wait_for_delete_resource(self, *, resource: dict):
+        try:
+            self.do_wait_for_delete_resource(resource=resource)
+        except (Exception, KeyboardInterrupt) as e:
+            label = resource.get(Constants.LABEL)
+
+            self.failed[label] = 'DELETE'
+            raise e
+
     def get_state(self) -> ProviderState:
         def cleanup_attrs(attrs):
             attributes = attrs.copy()
@@ -331,4 +340,8 @@ class Provider(ABC):
 
     @abstractmethod
     def do_delete_resource(self, *, resource: dict):
+        pass
+
+    @abstractmethod
+    def do_wait_for_delete_resource(self, *, resource: dict):
         pass

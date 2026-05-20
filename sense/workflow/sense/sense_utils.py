@@ -79,7 +79,7 @@ def instance_operate(*, client, si_uuid, action='provision'):
     if "CREATE - COMMITTING" not in status or 'CANCEL - READY' == status:
         try:
             time.sleep(randint(5, 10))
-            workflow_api.instance_operate(action, si_uuid=si_uuid, async_req=True)
+            workflow_api.instance_operate(action, si_uuid=si_uuid, sync=False)
         except Exception as e:
             logger.warning(f"exception from instance_operate {e}")
 
@@ -105,7 +105,7 @@ def wait_for_instance_create(*, client, si_uuid):
             pass
 
         logger.info(f"Waiting on CREATE COMPILED: going to sleep attempt={attempt}")
-        time.sleep(randint(30, 35))
+        time.sleep(randint(10, 15))
 
     return workflow_api.instance_get_status(si_uuid=si_uuid)
 
@@ -132,7 +132,7 @@ def wait_for_instance_operate(*, client, si_uuid):
             pass
 
         logger.info(f"Waiting on CREATE/REINSTATE-READY: going to sleep attempt={attempt}")
-        time.sleep(randint(30, 35))
+        time.sleep(randint(10, 15))
 
     return workflow_api.instance_get_status(si_uuid=si_uuid)
 
@@ -167,9 +167,9 @@ def delete_instance(*, client, si_uuid):
 
         try:
             if 'READY' not in status:
-                workflow_api.instance_operate('cancel', si_uuid=si_uuid, async_req=True, force=True)
+                workflow_api.instance_operate('cancel', si_uuid=si_uuid, sync=False, force=True)
             else:
-                workflow_api.instance_operate('cancel', si_uuid=si_uuid, async_req=True)
+                workflow_api.instance_operate('cancel', si_uuid=si_uuid, sync=False)
         except ValueError as ve:
             status = workflow_api.instance_get_status(si_uuid=si_uuid)
 
@@ -203,7 +203,8 @@ def wait_for_delete_instance(*, client, si_uuid, alias):
 
     for attempt in range(SENSE_RETRY):
         # This sleep is here to workaround issue where CANCEL-READY shows up prematurely.
-        time.sleep(random.randint(30, 35))
+        # time.sleep(random.randint(30, 35))
+        time.sleep(random.randint(10, 15))
 
         status = workflow_api.instance_get_status(si_uuid=si_uuid)
         logger.info(f"Waiting on CANCEL-READY for {alias}: status={status}:attempt={attempt} out of {SENSE_RETRY}")

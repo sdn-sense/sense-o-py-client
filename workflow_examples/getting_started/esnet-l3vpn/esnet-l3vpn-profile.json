@@ -1,0 +1,36 @@
+{
+  "data": {
+    "type": "Multi-Point L3VPN",
+    "connections": [
+      {
+        "name": "Connection 1",
+        "terminals": [
+          {
+            "uri": "urn:ogf:network:stack-esnet:2026:node+lbnl50-cr6:port+2_1_c19_1",
+            "vlan_tag": "any",
+            "bgp": {
+              "local_ip": "2001:4b::0/64",
+              "remote_ip": "2001:4b::1",
+              "remote_asn": "65001",
+              "auth_key": "5ebe2294ecd0e0f08eab7690d2a6ee69"
+            }
+          },
+          {
+            "uri": "urn:ogf:network:stack-esnet:2026:node+eqxdc4-cr6:port+2_1_c3_1_aws_us-east-1",
+            "vlan_tag": "any",
+            "bgp": {
+              "local_ip": "192.164.58.0/24",
+              "remote_ip": "192.164.58.2",
+              "remote_asn": "16550",
+              "auth_key": "5ebe2294ecd0e0f08eab7690d2a6ee69"
+            },
+            "cloud_connect": {
+              "bandwidth_mbps": "20"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "service": "dnc"
+}

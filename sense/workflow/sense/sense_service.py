@@ -37,6 +37,7 @@ class SenseService(Service):
         self.state = str()
         self.intents = list()
         self.manifest = dict()
+        self.reuse_manifest = False
 
         if isinstance(saved_state, ServiceState):
             self._saved_state: dict = saved_state.attributes
@@ -58,6 +59,7 @@ class SenseService(Service):
         logger.info(f"Service instance: {self.name} {self.id} with status={status}")
 
         if 'CREATE - READY' == status:
+            self.reuse_manifest = True
             return
 
         self._saved_state = dict()
@@ -106,8 +108,7 @@ class SenseService(Service):
             return
 
         self.manifest = self._saved_state.get('manifest', dict())
-
-        if self.manifest:
+        if self.reuse_manifest and self.manifest:
             logger.info(f"Using saved manifest {self.name}: \n{json.dumps(self.manifest, indent=2)}")
             return
 
@@ -126,7 +127,7 @@ class SenseService(Service):
 
             for uri in uris:
                 for terminal in self.manifest['terminals']:
-                    if 'port' in terminal and terminal['port'].startswith(uri + ":"):
+                    if 'port' in terminal and (terminal['port'] == uri or terminal['port'].startswith(uri + ":")):
                         adjusted_terminals.append(terminal)
                         break
 
