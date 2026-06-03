@@ -339,3 +339,82 @@ class AddressApi():
             return self.client.request('PUT',
                                        '/address/affiliate/' + pool + '/name/' + params['name'] + '/' + params[
                                            'scope'] + '/' + uri)
+
+    def expire_address(self, pool: str, expire: int, **kwargs):  # noqa: E501
+        """update allocation expiry by address or name  # noqa: E501
+        This method makes a synchronous HTTP request by default.
+        :param async_req bool
+        :param str pool: Pool Name. (required)
+        :param int expire: Expiry value in seconds. (required)
+        :return: allocation result
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        kwargs['_return_http_data_only'] = True
+
+        if 'scope' not in kwargs:
+            kwargs['scope'] = 'default'
+
+        if kwargs.get('async_req'):
+            return self.expire_put_with_http_info(pool, expire, **kwargs)  # noqa: E501
+        else:
+            (data) = self.expire_put_with_http_info(pool, expire, **kwargs)  # noqa: E501
+            return data
+
+    def expire_put_with_http_info(self, pool: str, expire: int,
+                                  **kwargs):  # noqa: E501
+        """update allocation expiry by address or name  # noqa: E501
+        Updates the expiry value of an allocation belonging to given pool and scope.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+        >>> thread = api.expire_put_with_http_info(pool, expire, async_req=True)
+        >>> result = thread.get()
+
+        :param async_req bool
+        :param str pool: Pool Name (required)
+        :param int expire: Expiry value in seconds (required)
+        :return: list[Allocations]
+                 If the method is called asynchronously,
+                 returns the request thread.
+        """
+
+        all_params = ['pool', 'scope', 'name', 'address', 'expire']  # noqa: E501
+        all_params.append('async_req')
+        all_params.append('_return_http_data_only')
+        all_params.append('_preload_content')
+        all_params.append('_request_timeout')
+
+        params = locals()
+        for key, val in params['kwargs'].items():
+            if key not in all_params:
+                raise TypeError("Got an unexpected keyword argument '%s'"
+                                " to method intent_instance_si_uuid_get" % key)
+            params[key] = val
+        del params['kwargs']
+
+        if 'pool' not in params or params['pool'] is None:
+            raise ValueError(
+                "Missing the required parameter `pool` when calling `expire_put_with_http_info`"
+            )  # noqa: E501
+        if 'scope' not in params:
+            params['scope'] = 'default'
+
+        try:
+            expire_seconds = int(expire)
+        except (TypeError, ValueError):
+            raise ValueError("The 'expire' parameter must be an integer (seconds)")
+
+        if 'address' not in params and 'name' not in params:
+            raise TypeError("expire_address call needs either a 'name' or 'address' parameter")
+        elif 'address' in params:
+            address = params['address'].replace('/', '%2F')
+            return self.client.request('PUT',
+                                       '/address/allocate/' + pool + '/address/' + address + '/' + params[
+                                           'scope'] + '/expiry',
+                                       body_params=str(expire_seconds), content_type='json')
+        else:
+            return self.client.request('PUT',
+                                       '/address/allocate/' + pool + '/name/' + params['name'] + '/' + params[
+                                           'scope'] + '/expiry',
+                                       body_params=str(expire_seconds), content_type='json')

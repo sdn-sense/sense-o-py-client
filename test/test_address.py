@@ -62,3 +62,10 @@ class TestAddressApi(unittest.TestCase):
         print(res)
 
 
+    def test_expire_ipv6(self):
+        # - TESTING: PUT /address/allocate/{pool_name}/.../expiry
+        # res = self.client.expire_address(self.pool, 3600, scope=self.scope, address='2001:48d0:3001::/50')
+        res = self.client.expire_address(self.pool, 3600, scope=self.scope, name='2001:48d0:3001::/50')
+        print(res)
+
+

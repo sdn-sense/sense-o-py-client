@@ -95,7 +95,7 @@ if __name__ == "__main__":
     parser.add_argument("--state", action="append",
                         help="optional status parameter")
     parser.add_argument("--address", action="append",
-                        help="address (ipv4, ipv6, mac, id) allocate, free and affiliate")
+                        help="address (ipv4, ipv6, mac, id) allocate, free, affiliate and expire")
     parser.add_argument("--intent", action="append",
                         help="intent UUID parameter")
     parser.add_argument("-opt", "--options", action="append",
@@ -630,8 +630,29 @@ if __name__ == "__main__":
             if "ERROR" in response:
                 raise ValueError(f"Address affiliate failed with option `{args.address}`")
             output_handler(response, args.json)
+        elif address_opts[0] == 'expire':
+            for i in range(1, len(address_opts)):
+                kv = address_opts[i].split('=')
+                if len(kv) != 2:
+                    raise ValueError(f"Invalid address expire option field:`{address_opts[i]}`")
+                params[kv[0]] = kv[1]
+            if 'pool' not in params:
+                raise ValueError(f"Missing a 'pool' paramter in the expire option")
+            if 'expire' not in params:
+                raise ValueError(f"Missing an 'expire' paramter in the expire option")
+            pool = params['pool']
+            del params['pool']
+            try:
+                expire = int(params['expire'])
+            except ValueError:
+                raise ValueError(f"The 'expire' paramter must be an integer (seconds)")
+            del params['expire']
+            response = addressApi.expire_address(pool, expire, **params)
+            if "ERROR" in response:
+                raise ValueError(f"Address expire failed with option `{args.address}`")
+            output_handler(response, args.json)
         else:
-            raise ValueError(f"Invalid address allocate/free/affiliate options")
+            raise ValueError(f"Invalid address allocate/free/affiliate/expire options")
     elif args.troubleshoot:
         if args.options:
             troubleshootOpts = args.options[0].split(",")
