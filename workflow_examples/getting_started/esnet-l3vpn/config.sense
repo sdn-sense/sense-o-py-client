@@ -1,0 +1,74 @@
+config:
+  - manifest_template:
+      - dnc_manifest_template:
+          terminals:
+            - required: 'true'
+              vlanport: ?vlanport?
+              vlan: ?vlan?
+              bgp:
+                local_ip: ?lip?
+                remote_ip: ?rip?
+                asn: ?asn?
+                gtsm: ?gtsm?
+                auth_key: ?auth_key?
+              bw: ?bw?
+              rtmon: ?rtmon?
+              router:
+                router_uri: ?rt?
+                router_id: ?rid?
+                router_status: ?st?
+              sparql: 'SELECT DISTINCT ?rt ?rid ?st ?vlanport ?vlan ?lip ?rip ?asn ?gtsm ?bw ?auth_key ?rtmon WHERE {
+                         ?rt a mrs:RoutingTable. ?rt mrs:hasNetworkAddress ?nas. ?nas mrs:value ?rid. ?rt mrs:hasNetworkStatus ?ns. ?ns mrs:value ?st.
+	                 ?rt nml:hasBidirectionalPort ?vlanport. ?vlanport nml:hasLabel ?lbl. ?lbl nml:value ?vlan. 
+                         ?vlanport mrs:hasNetworkAddress ?na. ?na mrs:type "sense-rtmon:name". ?na mrs:value ?rtmon.
+                         ?rt mrs:hasRoute ?rou. ?rou mrs:routeTo ?vlanport.
+                         ?rou mrs:routeTo ?bgpasn. ?bgpasn mrs:type "bgp-asn". ?bgpasn mrs:value ?asn. 
+                         ?rou mrs:nextHop ?via. ?via mrs:value ?rip.
+                         OPTIONAL {?vlanport  mrs:hasNetworkAddress ?ipv4addr. ?ipv4addr mrs:type "ipv4-address". ?ipv4addr mrs:value ?lip. }
+                         OPTIONAL {?vlanport  mrs:hasNetworkAddress ?ipv6addr. ?ipv6addr mrs:type "ipv6-address". ?ipv6addr mrs:value ?lip. }
+                         OPTIONAL {?rou mrs:hasNetworkAttribute ?nattr. ?nattr mrs:type "bgp-authkey". ?nattr mrs:value ?auth_key. }
+                         OPTIONAL {?rou mrs:hasNetworkAttribute ?gtsmattr. ?gtsmattr mrs:type "bgp-gtsm". ?gtsmattr mrs:value ?gtsm. }
+                         OPTIONAL {?rou mrs:hasNetworkAttribute ?bwattr. ?bwattr mrs:type "bandwidth_mbps". ?bwattr mrs:value ?bw. }
+                       }'
+              port: ?port?
+              port_id: ?nid?
+              sparql-ext: 'SELECT DISTINCT ?port ?nid WHERE {
+                             ?port a nml:BidirectionalPort. ?port nml:hasBidirectionalPort ?vlanport. ?port mrs:hasNetworkAddress ?naa. ?naa mrs:type "node_id". ?naa mrs:value ?nid.
+			  }'
+
+resource:
+  - service:
+      - arouter:
+          profile: esnet-l3vpn 
+          manifest_template: '{{ manifest_template.dnc_manifest_template }}'
+          edit_template:
+              data.connections[0].terminals[0].uri: urn:ogf:network:stack-esnet:2026:node+lbnl50-cr6:port+2_1_c19_1 
+              data.connections[0].terminals[0].bgp.local_ip: 192.162.1.0/24
+              data.connections[0].terminals[0].bgp.remote_ip: 192.162.1.2
+              data.connections[0].terminals[0].bgp.remote_asn: 1001
+              data.connections[0].terminals[0].bgp.auth_key: 5ebe2294ecd0e0f08eab7690d2a6ee69
+
+              data.connections[0].terminals[1].uri: urn:ogf:network:stack-esnet:2026:node+eqxdc4-cr6:port+2_1_c3_1_aws_us-east-1 
+              data.connections[0].terminals[1].bgp.local_ip: 192.162.2.0/24
+              data.connections[0].terminals[1].bgp.remote_ip: 192.162.2.2
+              data.connections[0].terminals[1].bgp.remote_asn: 1551
+              data.connections[0].terminals[1].bgp.auth_key: 5ebe2294ecd0e0f08eab7690d2a6ee69
+              data.connections[0].terminals[1].cloud_connect.bandwidth_mbps: 40
+          count: 5
+      - brouter:
+          profile: esnet-l3vpn 
+          manifest_template: '{{ manifest_template.dnc_manifest_template }}'
+          edit_template:
+              data.connections[0].terminals[0].uri: urn:ogf:network:stack-esnet:2026:node+osti-cr6:port+1_1_c13_2
+              data.connections[0].terminals[0].bgp.local_ip: 192.163.1.0/24
+              data.connections[0].terminals[0].bgp.remote_ip: 192.163.1.2
+              data.connections[0].terminals[0].bgp.remote_asn: 4001
+              data.connections[0].terminals[0].bgp.auth_key: 5ebe2294ecd0e0f08eab7690d2a6ee69
+
+              data.connections[0].terminals[1].uri: urn:ogf:network:stack-esnet:2026:node+wash-cr6:port+2_1_c4_1_aws_us-east-1 
+              data.connections[0].terminals[1].bgp.local_ip: 192.163.2.0/24
+              data.connections[0].terminals[1].bgp.remote_ip: 192.163.2.2
+              data.connections[0].terminals[1].bgp.remote_asn: 4551
+              data.connections[0].terminals[1].bgp.auth_key: 5ebe2294ecd0e0f08eab7690d2a6ee69
+              data.connections[0].terminals[1].cloud_connect.bandwidth_mbps: 60
+          count: 5

@@ -138,9 +138,8 @@ class ServiceHandler:
 
     def delete_resource(self, *, resource: dict):
         assert Constants.PROFILE in resource
-
         label = resource[Constants.LABEL]
-        logger.info(f"Deleting resource: {label}")
+        logger.info(f"Calling delete resource: {label}")
         edit_template = resource.get("edit_template", dict())
         profile = resource[Constants.PROFILE]
         count = resource[Constants.RES_COUNT]
@@ -149,7 +148,28 @@ class ServiceHandler:
         if isinstance(manifest_template, str):
             manifest_template = self._load_manifest_template(resource.get(Constants.CONFIG_DIR), manifest_template)
 
-        services = list()
+        for idx in range(0, count):
+            serv_name = self.provider.resource_name(resource, idx)
+            serv = SenseService(client=self.client,
+                                label=label, name=serv_name,
+                                profile=profile,
+                                edit_template=edit_template,
+                                manifest_template=manifest_template)
+            serv.delete()
+
+        logger.info(f"Done calling delete resource: {label}")
+
+    def do_wait_for_delete_resource(self, *, resource: dict):
+        assert Constants.PROFILE in resource
+        label = resource[Constants.LABEL]
+        logger.info(f"Waiting on deleted resource: {label}")
+        edit_template = resource.get("edit_template", dict())
+        profile = resource[Constants.PROFILE]
+        count = resource[Constants.RES_COUNT]
+        manifest_template = resource.get("manifest_template", dict())
+
+        if isinstance(manifest_template, str):
+            manifest_template = self._load_manifest_template(resource.get(Constants.CONFIG_DIR), manifest_template)
 
         for idx in range(0, count):
             serv_name = self.provider.resource_name(resource, idx)
@@ -158,12 +178,7 @@ class ServiceHandler:
                                 profile=profile,
                                 edit_template=edit_template,
                                 manifest_template=manifest_template)
-
-            serv.delete()
-            services.append(serv)
-
-        for serv in services:
             serv.wait_for_delete()
-            self.resource_listener.on_deleted(source=self.provider, provider=self.provider, resource=serv)
 
-        logger.info(f"Done Deleting resource: {label}")
+        logger.info(f"Done waiting on deleted resource: {label}")
+
