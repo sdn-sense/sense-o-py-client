@@ -38,7 +38,54 @@ curl 'https://sense-prpdev.nrp-nautilus.io/api/T2_US_SDSC/setinstancestartend' \
 ```
 
 Pass `--json` to emit the resolved records (type, uri, root_uri, sitename, apiroot, curl) as
-JSON instead.
+JSON instead. A single instance typically spans several sites, and a site that carries both
+an l2 and an l3 service of the instance is resolved once and appears under the same
+`root_uri` twice:
+
+```json
+[
+  {
+    "type": "l2",
+    "uri": "urn:ogf:network:t2-us-ucsd.edu:2025:edgecore_s0:service+vsw:conn+e5478dc9-088b-4e0d-9ea3-d12baef3206b:vt+l2-policy-Connection_1:vlan+3131",
+    "root_uri": "urn:ogf:network:t2-us-ucsd.edu:2025",
+    "sitename": "T2_US_UCSD",
+    "apiroot": "https://sense-t2-us-ucsd.nrp-nautilus.io:443",
+    "curl": "curl 'https://sense-t2-us-ucsd.nrp-nautilus.io:443/api/T2_US_UCSD/setinstancestartend' \\\n  -X POST \\\n  -H 'Authorization: Bearer <TOKEN>' \\\n  --data-raw '{\"sitename\":\"T2_US_UCSD\",\"instanceid\":\"urn:ogf:network:t2-us-ucsd.edu:2025:edgecore_s0:service+vsw:conn+e5478dc9-088b-4e0d-9ea3-d12baef3206b:vt+l2-policy-Connection_1:vlan+3131\",\"starttimestamp\":1788965593,\"endtimestamp\":1789051993}'"
+  },
+  {
+    "type": "l2",
+    "uri": "urn:ogf:network:sense-oasis-nrp-nautilus.io:2020:oasis:service+vsw:conn+e5478dc9-088b-4e0d-9ea3-d12baef3206b:vt+l2-policy-Connection_1:vlan+3131",
+    "root_uri": "urn:ogf:network:sense-oasis-nrp-nautilus.io:2020",
+    "sitename": "T2_US_UCSD_OASIS",
+    "apiroot": "https://sense-oasis.nrp-nautilus.io:443",
+    "curl": "curl 'https://sense-oasis.nrp-nautilus.io:443/api/T2_US_UCSD_OASIS/setinstancestartend' \\\n  -X POST \\\n  -H 'Authorization: Bearer <TOKEN>' \\\n  --data-raw '{\"sitename\":\"T2_US_UCSD_OASIS\",\"instanceid\":\"urn:ogf:network:sense-oasis-nrp-nautilus.io:2020:oasis:service+vsw:conn+e5478dc9-088b-4e0d-9ea3-d12baef3206b:vt+l2-policy-Connection_1:vlan+3131\",\"starttimestamp\":1788965593,\"endtimestamp\":1789051993}'"
+  },
+  {
+    "type": "l2",
+    "uri": "urn:ogf:network:fnal.gov:2023:cisconx9:service+vsw:conn+e5478dc9-088b-4e0d-9ea3-d12baef3206b:vt+l2-policy-Connection_1:vlan+3613",
+    "root_uri": "urn:ogf:network:fnal.gov:2023",
+    "sitename": "T1_US_FNAL",
+    "apiroot": "https://cmssense1.fnal.gov:8443",
+    "curl": "curl 'https://cmssense1.fnal.gov:8443/api/T1_US_FNAL/setinstancestartend' \\\n  -X POST \\\n  -H 'Authorization: Bearer <TOKEN>' \\\n  --data-raw '{\"sitename\":\"T1_US_FNAL\",\"instanceid\":\"urn:ogf:network:fnal.gov:2023:cisconx9:service+vsw:conn+e5478dc9-088b-4e0d-9ea3-d12baef3206b:vt+l2-policy-Connection_1:vlan+3613\",\"starttimestamp\":1788965593,\"endtimestamp\":1789051993}'"
+  },
+  {
+    "type": "l3",
+    "uri": "urn:ogf:network:fnal.gov:2023:cisconx9:service+rst-ipv6:table+e5478dc9-088b-4e0d-9ea3-d12baef3206b",
+    "root_uri": "urn:ogf:network:fnal.gov:2023",
+    "sitename": "T1_US_FNAL",
+    "apiroot": "https://cmssense1.fnal.gov:8443",
+    "curl": "curl 'https://cmssense1.fnal.gov:8443/api/T1_US_FNAL/setinstancestartend' \\\n  -X POST \\\n  -H 'Authorization: Bearer <TOKEN>' \\\n  --data-raw '{\"sitename\":\"T1_US_FNAL\",\"instanceid\":\"urn:ogf:network:fnal.gov:2023:cisconx9:service+rst-ipv6:table+e5478dc9-088b-4e0d-9ea3-d12baef3206b\",\"starttimestamp\":1788965593,\"endtimestamp\":1789051993}'"
+  },
+  {
+    "type": "l3",
+    "uri": "urn:ogf:network:t2-us-ucsd.edu:2025:edgecore_s0:service+rst-ipv6:table+e5478dc9-088b-4e0d-9ea3-d12baef3206b",
+    "root_uri": "urn:ogf:network:t2-us-ucsd.edu:2025",
+    "sitename": "T2_US_UCSD",
+    "apiroot": "https://sense-t2-us-ucsd.nrp-nautilus.io:443",
+    "curl": "curl 'https://sense-t2-us-ucsd.nrp-nautilus.io:443/api/T2_US_UCSD/setinstancestartend' \\\n  -X POST \\\n  -H 'Authorization: Bearer <TOKEN>' \\\n  --data-raw '{\"sitename\":\"T2_US_UCSD\",\"instanceid\":\"urn:ogf:network:t2-us-ucsd.edu:2025:edgecore_s0:service+rst-ipv6:table+e5478dc9-088b-4e0d-9ea3-d12baef3206b\",\"starttimestamp\":1788965593,\"endtimestamp\":1789051993}'"
+  }
+]
+```
 
 An instance may hold l2-services, l3-services, both, or neither; a missing kind is simply
 absent from the output. Domains that publish no Site RM metadata service are reported once
