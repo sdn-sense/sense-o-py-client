@@ -169,6 +169,60 @@ def get_site_rm(workflow_api, root_uri):
     return sitename.strip(), apiroot.strip().rstrip("/")
 
 
+def make_siterm_m2m_resolver(cert, key):
+    """Return sitename -> bearer token, minted per site by M2M x509 challenge/response.
+
+    The exchange itself lives in the SiteRM client: POST the certificate to the site's
+    M2M auth endpoint, sign the returned challenge with the private key, post the
+    signature back for the token. Tokens are cached by that client in ~/.siterm/auth.json
+    and reused until they expire.
+    """
+    # Imported lazily: the SiteRM client pulls in httpx, GitPython and cryptography, and
+    # constructing it clones the rm-configs repo, which is wasted work for the other modes.
+    from sense.client.siterm.requestwrapper import RequestWrapper as SiteRMRequestWrapper
+
+    wrapper = SiteRMRequestWrapper()
+    if cert:
+        wrapper.config["SITERM_CERT"] = cert
+    if key:
+        wrapper.config["SITERM_KEY"] = key
+    wrapper.cert = (wrapper.config["SITERM_CERT"], wrapper.config["SITERM_KEY"])
+
+    def resolve(sitename, apiroot):
+        # Mint the token against the same host the curl command targets, rather than
+        # whatever webdomain rm-configs carries for this site.
+        wrapper.fes[sitename] = apiroot
+        supported = {c["auth_method"]: c for c in wrapper._probeSiteCapabilities(sitename).get("auth_methods", [])}
+        if "M2M" not in supported:
+            raise ValueError(f"site {sitename} does not offer M2M auth (offers {sorted(supported) or 'nothing'})")
+        capability = supported["M2M"]
+        return wrapper._getAccessToken(
+            sitename,
+            {
+                "method": "m2m",
+                "endpoint": capability.get("auth_endpoint"),
+                "refresh_endpoint": capability.get("refresh_endpoint"),
+                "cert": wrapper.config["SITERM_CERT"],
+                "key": wrapper.config["SITERM_KEY"],
+            },
+        )
+
+    return resolve
+
+
+def make_token_resolver(args):
+    """Return sitename, apiroot -> bearer token for the selected token mode."""
+    if args.fetch_token:
+        return make_siterm_m2m_resolver(args.cert, args.key)
+    if args.sense_token:
+        token = ApiClient(None).token["access_token"]
+    elif args.with_token:
+        token = args.with_token
+    else:
+        token = "<TOKEN>"
+    return lambda sitename, apiroot: token
+
+
 def shell_quote(value):
     """Wrap value in single quotes the way the reference curl command does."""
     return "'" + str(value).replace("'", "'\\''") + "'"
@@ -202,8 +256,11 @@ def main():
     parser.add_argument("--end", help="end time: epoch seconds, or an offset from now such as +10h or -10m (default: start + --duration)")
     parser.add_argument("--duration", type=parse_duration, default="1d", help="length of the window from start when --end is omitted, e.g. 3600, 10s, 10m, 10h, 10d (default: 1d)")
     token_group = parser.add_mutually_exclusive_group()
-    token_group.add_argument("--fetch-token", action="store_true", help="fetch a bearer token from the SENSE auth config (SENSE_AUTH_OVERRIDE, /etc/sense-o-auth.yaml or ~/.sense-o-auth.yaml) and inline it")
+    token_group.add_argument("--fetch-token", action="store_true", help="mint a per-site bearer token by M2M x509 challenge/response against each site's SiteRM")
+    token_group.add_argument("--sense-token", action="store_true", help="fetch one bearer token from the SENSE auth config (SENSE_AUTH_OVERRIDE, /etc/sense-o-auth.yaml or ~/.sense-o-auth.yaml) and inline it for every site")
     token_group.add_argument("--with-token", metavar="TOKEN", help="inline this bearer token instead of the <TOKEN> placeholder")
+    parser.add_argument("--cert", help="x509 certificate for --fetch-token (default: SITERM_CERT from the SENSE auth config, else /etc/grid-security/hostcert.pem)")
+    parser.add_argument("--key", help="x509 private key for --fetch-token (default: SITERM_KEY from the SENSE auth config, else /etc/grid-security/hostkey.pem)")
     parser.add_argument("--json", action="store_true", help="emit the resolved records as JSON instead of curl commands")
     args = parser.parse_args(join_negative_offsets(sys.argv[1:]))
 
@@ -216,11 +273,9 @@ def main():
     if end <= start:
         parser.error(f"end timestamp {end} is not after start timestamp {start}")
 
-    token = "<TOKEN>"
-    if args.fetch_token:
-        token = ApiClient(None).token["access_token"]
-    elif args.with_token:
-        token = args.with_token
+    if (args.cert or args.key) and not args.fetch_token:
+        parser.error("--cert/--key only apply to --fetch-token")
+    token_for = make_token_resolver(args)
 
     workflow_api = WorkflowCombinedApi()
     discover_api = DiscoverApi()
@@ -244,6 +299,7 @@ def main():
             if site_cache[root_uri] is None:  # already reported for this domain
                 continue
             sitename, apiroot = site_cache[root_uri]
+            token = token_for(sitename, apiroot)
         except Exception as exc:  # keep going so one bad service does not hide the rest
             print(f"Skipping {kind} service {uri}: {exc}", file=sys.stderr)
             failures += 1

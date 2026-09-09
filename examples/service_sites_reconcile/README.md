@@ -21,11 +21,26 @@ suffixes `s`, `m`, `h`, `d` — `+10m` for ten minutes ahead, `-10d` for ten day
 --start 1767287460           # absolute epoch seconds, plus the default 1d duration
 ```
 
-By default the Authorization header carries the literal `<TOKEN>` placeholder. Use
-`--with-token TOKEN` to inline a token of your own, or `--fetch-token` to pull one from the
-SENSE auth config (`$SENSE_AUTH_OVERRIDE`, `/etc/sense-o-auth.yaml` or `~/.sense-o-auth.yaml`).
-Note that the generated command targets the Site RM's own API root rather than SENSE-O, so a
-SENSE-O token is not necessarily the credential that endpoint expects.
+By default the Authorization header carries the literal `<TOKEN>` placeholder. Three options
+fill it in instead:
+
+| option | token |
+| --- | --- |
+| `--fetch-token [--cert PATH --key PATH]` | one per site, minted by M2M x509 challenge/response against that site's SiteRM |
+| `--sense-token` | one SENSE-O token, from the SENSE auth config, reused for every site |
+| `--with-token TOKEN` | the token you pass, reused for every site |
+
+`--fetch-token` is the one that matches how these endpoints authenticate: the generated
+commands target each Site RM's own API root rather than SENSE-O, so a SENSE-O token is not
+necessarily the credential they accept. It goes through the SiteRM client in
+`sense/client/siterm`, which posts the certificate to the site's M2M auth endpoint, signs the
+returned challenge with the private key (RSA-PSS or ECDSA, SHA256), and posts the signature
+back for the token. Capabilities and tokens are cached per site — in `~/.siterm/auth.json`
+and reused until they expire — so a site carrying several services of the instance is only
+exchanged with once. The token is minted against the same apiroot the curl command targets.
+`--cert`/`--key` default to `SITERM_CERT`/`SITERM_KEY` from the SENSE auth config, falling
+back to `/etc/grid-security/hostcert.pem` and `hostkey.pem`. A site that offers no M2M auth
+method is reported on stderr and skipped, as is any site whose exchange fails.
 
 Each service produces a commented header line followed by its curl command:
 
