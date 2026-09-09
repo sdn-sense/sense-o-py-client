@@ -22,6 +22,7 @@ import re
 import sys
 import time
 
+from sense.common import getHTTPTimeout
 from sense.client.apiclient import ApiClient
 from sense.client.discover_api import DiscoverApi
 from sense.client.workflow_combined_api import WorkflowCombinedApi
@@ -228,8 +229,10 @@ def shell_quote(value):
     return "'" + str(value).replace("'", "'\\''") + "'"
 
 
-def build_curl(sitename, apiroot, instance_id, start, end, token):
-    """Assemble the setinstancestartend curl command for one service."""
+def build_request(sitename, apiroot, instance_id, start, end, token):
+    """Return (url, headers, payload) for one setinstancestartend call."""
+    url = f"{apiroot}/api/{sitename}/setinstancestartend"
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     payload = json.dumps(
         {
             "sitename": sitename,
@@ -239,14 +242,25 @@ def build_curl(sitename, apiroot, instance_id, start, end, token):
         },
         separators=(",", ":"),
     )
-    return "\n".join(
-        [
-            f"curl {shell_quote(f'{apiroot}/api/{sitename}/setinstancestartend')} \\",
-            "  -X POST \\",
-            f"  -H {shell_quote(f'Authorization: Bearer {token}')} \\",
-            f"  --data-raw {shell_quote(payload)}",
-        ]
-    )
+    return url, headers, payload
+
+
+def build_curl(url, headers, payload):
+    """Format a request as the equivalent curl command."""
+    lines = [f"curl {shell_quote(url)} \\", "  -X POST \\"]
+    lines += [f"  -H {shell_quote(f'{name}: {value}')} \\" for name, value in headers.items()]
+    lines.append(f"  --data-raw {shell_quote(payload)}")
+    return "\n".join(lines)
+
+
+def send_request(url, headers, payload):
+    """POST one setinstancestartend request; return (status_code, body)."""
+    # requests rather than a curl subprocess, but built from the same url/headers/payload
+    # as the printed command, so what runs is what was shown.
+    import requests
+
+    response = requests.post(url, headers=headers, data=payload, timeout=getHTTPTimeout())
+    return response.status_code, response.text.strip()
 
 
 def main():
@@ -261,6 +275,7 @@ def main():
     token_group.add_argument("--with-token", metavar="TOKEN", help="inline this bearer token instead of the <TOKEN> placeholder")
     parser.add_argument("--cert", help="x509 certificate for --fetch-token (default: SITERM_CERT from the SENSE auth config, else /etc/grid-security/hostcert.pem)")
     parser.add_argument("--key", help="x509 private key for --fetch-token (default: SITERM_KEY from the SENSE auth config, else /etc/grid-security/hostkey.pem)")
+    parser.add_argument("--commit", action="store_true", help="actually send the requests instead of only printing the curl commands")
     parser.add_argument("--json", action="store_true", help="emit the resolved records as JSON instead of curl commands")
     args = parser.parse_args(join_negative_offsets(sys.argv[1:]))
 
@@ -275,6 +290,8 @@ def main():
 
     if (args.cert or args.key) and not args.fetch_token:
         parser.error("--cert/--key only apply to --fetch-token")
+    if args.commit and not (args.fetch_token or args.sense_token or args.with_token):
+        parser.error("--commit needs a real token: pass --fetch-token, --sense-token or --with-token")
     token_for = make_token_resolver(args)
 
     workflow_api = WorkflowCombinedApi()
@@ -286,7 +303,7 @@ def main():
         return 0
 
     site_cache = {}  # root_uri -> (sitename, apiroot), or None for a non-SiteRM domain
-    records, failures = [], 0
+    pending, failures = [], 0
     for kind, uri in services:
         try:
             root_uri = get_root_uri(discover_api, uri)
@@ -304,25 +321,54 @@ def main():
             print(f"Skipping {kind} service {uri}: {exc}", file=sys.stderr)
             failures += 1
             continue
-        records.append(
-            {
-                "type": kind,
-                "uri": uri,
-                "root_uri": root_uri,
-                "sitename": sitename,
-                "apiroot": apiroot,
-                "curl": build_curl(sitename, apiroot, uri, start, end, token),
-            }
+        url, headers, payload = build_request(sitename, apiroot, uri, start, end, token)
+        pending.append(
+            (
+                {
+                    "type": kind,
+                    "uri": uri,
+                    "root_uri": root_uri,
+                    "sitename": sitename,
+                    "apiroot": apiroot,
+                    "curl": build_curl(url, headers, payload),
+                },
+                url,
+                headers,
+                payload,
+            )
         )
+
+    records = [record for record, _url, _headers, _payload in pending]
+
+    if args.commit:
+        for record, url, headers, payload in pending:
+            try:
+                status, body = send_request(url, headers, payload)
+            except Exception as exc:
+                record["status_code"], record["response"] = None, str(exc)
+                failures += 1
+            else:
+                record["status_code"], record["response"] = status, body
+                if status >= 400:
+                    failures += 1
+            if not args.json:
+                status = record["status_code"]
+                print(f"# {record['type']} service at {record['sitename']} ({record['root_uri']})")
+                print(f"POST {url} -> {status if status is not None else 'FAILED'}")
+                if record["response"]:
+                    print(f"  {record['response']}")
+                print()
 
     if args.json:
         print(json.dumps(records, indent=2))
-    else:
+    elif not args.commit:
         for record in records:
             print(f"# {record['type']} service at {record['sitename']} ({record['root_uri']})")
             print(record["curl"])
             print()
 
+    if args.commit:
+        return 1 if failures else 0
     return 1 if failures and not records else 0
 
 

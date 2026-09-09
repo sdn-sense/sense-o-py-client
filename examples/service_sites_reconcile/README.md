@@ -42,13 +42,40 @@ exchanged with once. The token is minted against the same apiroot the curl comma
 back to `/etc/grid-security/hostcert.pem` and `hostkey.pem`. A site that offers no M2M auth
 method is reported on stderr and skipped, as is any site whose exchange fails.
 
-Each service produces a commented header line followed by its curl command:
+Nothing is sent by default — the script only prints the commands, so you can review them and
+pipe them to a shell yourself. Pass `--commit` to send the requests directly instead, which
+needs a real token and so is refused alongside the `<TOKEN>` placeholder:
+
+```
+python cleanup_service_all_sites.py <instance-uuid> --start +10m --duration 1d --fetch-token --commit
+```
+
+Each request then reports its HTTP status and response body, and the script exits non-zero if
+any of them failed:
+
+```
+# l2 service at T1_US_FNAL (urn:ogf:network:fnal.gov:2023)
+POST https://cmssense1.fnal.gov:8443/api/T1_US_FNAL/setinstancestartend -> 200
+  {"status":"OK"}
+
+# l3 service at T1_US_FNAL (urn:ogf:network:fnal.gov:2023)
+POST https://cmssense1.fnal.gov:8443/api/T1_US_FNAL/setinstancestartend -> 401
+  {"error":"token expired"}
+```
+
+A request that never got a response — a refused connection, a timeout — reports `FAILED` with
+the error in place of a status code. With `--json`, each record gains `status_code` and
+`response` fields instead. Requests go out through `requests`, built from the same url,
+headers and body as the printed curl command, so what runs is what was shown.
+
+Without `--commit`, each service produces a commented header line followed by its curl command:
 
 ```
 # l3 service at T2_US_SDSC (urn:ogf:network:nrp-nautilus.io:2020)
 curl 'https://sense-prpdev.nrp-nautilus.io/api/T2_US_SDSC/setinstancestartend' \
   -X POST \
   -H 'Authorization: Bearer <TOKEN>' \
+  -H 'Content-Type: application/json' \
   --data-raw '{"sitename":"T2_US_SDSC","instanceid":"urn:ogf:network:nrp-nautilus.io:2020:sn3700_s0:service+rst-ipv6:table+3bae89fc","starttimestamp":1767287460,"endtimestamp":1767373860}'
 ```
 
@@ -65,7 +92,7 @@ an l2 and an l3 service of the instance is resolved once and appears under the s
     "root_uri": "urn:ogf:network:t2-us-ucsd.edu:2025",
     "sitename": "T2_US_UCSD",
     "apiroot": "https://sense-t2-us-ucsd.nrp-nautilus.io:443",
-    "curl": "curl 'https://sense-t2-us-ucsd.nrp-nautilus.io:443/api/T2_US_UCSD/setinstancestartend' \\\n  -X POST \\\n  -H 'Authorization: Bearer <TOKEN>' \\\n  --data-raw '{\"sitename\":\"T2_US_UCSD\",\"instanceid\":\"urn:ogf:network:t2-us-ucsd.edu:2025:edgecore_s0:service+vsw:conn+e5478dc9-088b-4e0d-9ea3-d12baef3206b:vt+l2-policy-Connection_1:vlan+3131\",\"starttimestamp\":1788965593,\"endtimestamp\":1789051993}'"
+    "curl": "curl 'https://sense-t2-us-ucsd.nrp-nautilus.io:443/api/T2_US_UCSD/setinstancestartend' \\\n  -X POST \\\n  -H 'Authorization: Bearer <TOKEN>' \\\n  -H 'Content-Type: application/json' \\\n  --data-raw '{\"sitename\":\"T2_US_UCSD\",\"instanceid\":\"urn:ogf:network:t2-us-ucsd.edu:2025:edgecore_s0:service+vsw:conn+e5478dc9-088b-4e0d-9ea3-d12baef3206b:vt+l2-policy-Connection_1:vlan+3131\",\"starttimestamp\":1788965593,\"endtimestamp\":1789051993}'"
   },
   {
     "type": "l2",
@@ -73,7 +100,7 @@ an l2 and an l3 service of the instance is resolved once and appears under the s
     "root_uri": "urn:ogf:network:sense-oasis-nrp-nautilus.io:2020",
     "sitename": "T2_US_UCSD_OASIS",
     "apiroot": "https://sense-oasis.nrp-nautilus.io:443",
-    "curl": "curl 'https://sense-oasis.nrp-nautilus.io:443/api/T2_US_UCSD_OASIS/setinstancestartend' \\\n  -X POST \\\n  -H 'Authorization: Bearer <TOKEN>' \\\n  --data-raw '{\"sitename\":\"T2_US_UCSD_OASIS\",\"instanceid\":\"urn:ogf:network:sense-oasis-nrp-nautilus.io:2020:oasis:service+vsw:conn+e5478dc9-088b-4e0d-9ea3-d12baef3206b:vt+l2-policy-Connection_1:vlan+3131\",\"starttimestamp\":1788965593,\"endtimestamp\":1789051993}'"
+    "curl": "curl 'https://sense-oasis.nrp-nautilus.io:443/api/T2_US_UCSD_OASIS/setinstancestartend' \\\n  -X POST \\\n  -H 'Authorization: Bearer <TOKEN>' \\\n  -H 'Content-Type: application/json' \\\n  --data-raw '{\"sitename\":\"T2_US_UCSD_OASIS\",\"instanceid\":\"urn:ogf:network:sense-oasis-nrp-nautilus.io:2020:oasis:service+vsw:conn+e5478dc9-088b-4e0d-9ea3-d12baef3206b:vt+l2-policy-Connection_1:vlan+3131\",\"starttimestamp\":1788965593,\"endtimestamp\":1789051993}'"
   },
   {
     "type": "l2",
@@ -81,7 +108,7 @@ an l2 and an l3 service of the instance is resolved once and appears under the s
     "root_uri": "urn:ogf:network:fnal.gov:2023",
     "sitename": "T1_US_FNAL",
     "apiroot": "https://cmssense1.fnal.gov:8443",
-    "curl": "curl 'https://cmssense1.fnal.gov:8443/api/T1_US_FNAL/setinstancestartend' \\\n  -X POST \\\n  -H 'Authorization: Bearer <TOKEN>' \\\n  --data-raw '{\"sitename\":\"T1_US_FNAL\",\"instanceid\":\"urn:ogf:network:fnal.gov:2023:cisconx9:service+vsw:conn+e5478dc9-088b-4e0d-9ea3-d12baef3206b:vt+l2-policy-Connection_1:vlan+3613\",\"starttimestamp\":1788965593,\"endtimestamp\":1789051993}'"
+    "curl": "curl 'https://cmssense1.fnal.gov:8443/api/T1_US_FNAL/setinstancestartend' \\\n  -X POST \\\n  -H 'Authorization: Bearer <TOKEN>' \\\n  -H 'Content-Type: application/json' \\\n  --data-raw '{\"sitename\":\"T1_US_FNAL\",\"instanceid\":\"urn:ogf:network:fnal.gov:2023:cisconx9:service+vsw:conn+e5478dc9-088b-4e0d-9ea3-d12baef3206b:vt+l2-policy-Connection_1:vlan+3613\",\"starttimestamp\":1788965593,\"endtimestamp\":1789051993}'"
   },
   {
     "type": "l3",
@@ -89,7 +116,7 @@ an l2 and an l3 service of the instance is resolved once and appears under the s
     "root_uri": "urn:ogf:network:fnal.gov:2023",
     "sitename": "T1_US_FNAL",
     "apiroot": "https://cmssense1.fnal.gov:8443",
-    "curl": "curl 'https://cmssense1.fnal.gov:8443/api/T1_US_FNAL/setinstancestartend' \\\n  -X POST \\\n  -H 'Authorization: Bearer <TOKEN>' \\\n  --data-raw '{\"sitename\":\"T1_US_FNAL\",\"instanceid\":\"urn:ogf:network:fnal.gov:2023:cisconx9:service+rst-ipv6:table+e5478dc9-088b-4e0d-9ea3-d12baef3206b\",\"starttimestamp\":1788965593,\"endtimestamp\":1789051993}'"
+    "curl": "curl 'https://cmssense1.fnal.gov:8443/api/T1_US_FNAL/setinstancestartend' \\\n  -X POST \\\n  -H 'Authorization: Bearer <TOKEN>' \\\n  -H 'Content-Type: application/json' \\\n  --data-raw '{\"sitename\":\"T1_US_FNAL\",\"instanceid\":\"urn:ogf:network:fnal.gov:2023:cisconx9:service+rst-ipv6:table+e5478dc9-088b-4e0d-9ea3-d12baef3206b\",\"starttimestamp\":1788965593,\"endtimestamp\":1789051993}'"
   },
   {
     "type": "l3",
@@ -97,7 +124,7 @@ an l2 and an l3 service of the instance is resolved once and appears under the s
     "root_uri": "urn:ogf:network:t2-us-ucsd.edu:2025",
     "sitename": "T2_US_UCSD",
     "apiroot": "https://sense-t2-us-ucsd.nrp-nautilus.io:443",
-    "curl": "curl 'https://sense-t2-us-ucsd.nrp-nautilus.io:443/api/T2_US_UCSD/setinstancestartend' \\\n  -X POST \\\n  -H 'Authorization: Bearer <TOKEN>' \\\n  --data-raw '{\"sitename\":\"T2_US_UCSD\",\"instanceid\":\"urn:ogf:network:t2-us-ucsd.edu:2025:edgecore_s0:service+rst-ipv6:table+e5478dc9-088b-4e0d-9ea3-d12baef3206b\",\"starttimestamp\":1788965593,\"endtimestamp\":1789051993}'"
+    "curl": "curl 'https://sense-t2-us-ucsd.nrp-nautilus.io:443/api/T2_US_UCSD/setinstancestartend' \\\n  -X POST \\\n  -H 'Authorization: Bearer <TOKEN>' \\\n  -H 'Content-Type: application/json' \\\n  --data-raw '{\"sitename\":\"T2_US_UCSD\",\"instanceid\":\"urn:ogf:network:t2-us-ucsd.edu:2025:edgecore_s0:service+rst-ipv6:table+e5478dc9-088b-4e0d-9ea3-d12baef3206b\",\"starttimestamp\":1788965593,\"endtimestamp\":1789051993}'"
   }
 ]
 ```
