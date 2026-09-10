@@ -266,9 +266,9 @@ def send_request(url, headers, payload):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("uuid", help="service instance UUID to match in the l2/l3 service URIs")
-    parser.add_argument("--start", help="start time: epoch seconds, or an offset from now such as +10s, +10m, +10h, +10d, or -10h/-10d for the past (default: now)")
-    parser.add_argument("--end", help="end time: epoch seconds, or an offset from now such as +10h or -10m (default: start + --duration)")
-    parser.add_argument("--duration", type=parse_duration, default="1d", help="length of the window from start when --end is omitted, e.g. 3600, 10s, 10m, 10h, 10d (default: 1d)")
+    parser.add_argument("--start", default="-2h", help="start time: epoch seconds, or an offset from now such as +10s, +10m, +10h, +10d, or -10h/-10d for the past (default: -2h)")
+    parser.add_argument("--end", help="end time: epoch seconds, or an offset from now such as +10h or -10m (default: start + --duration, i.e. -1h)")
+    parser.add_argument("--duration", type=parse_duration, default="1h", help="length of the window from start when --end is omitted, e.g. 3600, 10s, 10m, 10h, 10d (default: 1h)")
     token_group = parser.add_mutually_exclusive_group()
     token_group.add_argument("--fetch-token", action="store_true", help="mint a per-site bearer token by M2M x509 challenge/response against each site's SiteRM")
     token_group.add_argument("--sense-token", action="store_true", help="fetch one bearer token from the SENSE auth config (SENSE_AUTH_OVERRIDE, /etc/sense-o-auth.yaml or ~/.sense-o-auth.yaml) and inline it for every site")
@@ -281,7 +281,7 @@ def main():
 
     now = int(time.time())
     try:
-        start = parse_timespec(args.start, now) if args.start is not None else now
+        start = parse_timespec(args.start, now)
         end = parse_timespec(args.end, now) if args.end is not None else start + args.duration
     except argparse.ArgumentTypeError as exc:
         parser.error(str(exc))

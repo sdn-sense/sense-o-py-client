@@ -13,12 +13,16 @@ python cleanup_service_all_sites.py <instance-uuid> [--start ...] [--end ...] [-
 
 The start and end of the window accept either epoch seconds or an offset from now, using the
 suffixes `s`, `m`, `h`, `d` — `+10m` for ten minutes ahead, `-10d` for ten days back. When
-`--end` is omitted the window runs for `--duration` (default `1d`) from the start.
+`--end` is omitted the window runs for `--duration` from the start. The defaults are
+`--start -2h` and `--duration 1h`, so with no time arguments at all the window is the hour
+that ended an hour ago.
 
 ```
+                             # no time arguments: -2h to -1h
+--duration 30m               # from -2h, half an hour wide
 --start +10m --end +10h      # a window opening ten minutes from now
 --start -10d --end -9d       # a one-day window last week
---start 1767287460           # absolute epoch seconds, plus the default 1d duration
+--start 1767287460           # absolute epoch seconds, plus the default 1h duration
 ```
 
 By default the Authorization header carries the literal `<TOKEN>` placeholder. Three options
