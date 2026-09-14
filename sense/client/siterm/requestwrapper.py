@@ -156,12 +156,24 @@ class RequestWrapper(GitRepo):
         self._loadTokenCache()
 
 
-    def getSitenameFromUrn(self, urn: str) -> str:
-        """Map a URN to the sitename that owns its network domain"""
+    def findSitenameFromUrn(self, urn: str):
+        """Map a URN to the sitename that owns its network domain, or None.
+
+        A multi-domain path legitimately crosses domains that no SiteRM manages
+        (transit and exchange-point domains). Those have no entry in rm-configs,
+        so callers that are classifying URNs rather than addressing a site should
+        use this and treat None as "not a SiteRM endpoint"."""
         for domain_urn, sitename in self.domainUrns.items():
             if urn == domain_urn or urn.startswith(f"{domain_urn}:"):
                 return sitename
-        raise Exception(f"Could not find sitename for urn {urn}")
+        return None
+
+    def getSitenameFromUrn(self, urn: str) -> str:
+        """Map a URN to the sitename that owns its network domain. Raises if unknown"""
+        sitename = self.findSitenameFromUrn(urn)
+        if sitename is None:
+            raise Exception(f"Could not find sitename for urn {urn}")
+        return sitename
 
     def _loadTokenCache(self):
         """Load Token Cache"""
