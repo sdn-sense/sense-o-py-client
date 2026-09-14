@@ -156,6 +156,13 @@ class RequestWrapper(GitRepo):
         self._loadTokenCache()
 
 
+    def getSitenameFromUrn(self, urn: str) -> str:
+        """Map a URN to the sitename that owns its network domain"""
+        for domain_urn, sitename in self.domainUrns.items():
+            if urn == domain_urn or urn.startswith(f"{domain_urn}:"):
+                return sitename
+        raise Exception(f"Could not find sitename for urn {urn}")
+
     def _loadTokenCache(self):
         """Load Token Cache"""
         if os.path.exists(AUTH_CACHE_FILE):
