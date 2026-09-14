@@ -11,6 +11,17 @@ class BaseApi:
     def __init__(self):
         self.client = RequestWrapper()
 
+    def findSitename(self, **kwargs):
+        """Same as getSitename, but returns None instead of raising when no SiteRM
+        owns the urn's network domain.
+
+        For callers that walk a path and ask "is this endpoint one we manage?",
+        rather than callers that need a sitename to address a site."""
+        urn = kwargs.get("urn", None)
+        if urn and self.client.findSitenameFromUrn(urn) is None:
+            return kwargs.get("sitename", None)
+        return self.getSitename(**kwargs)
+
     def getSitename(self, **kwargs):
         """Get sitename from kwargs or urn"""
         sitename = kwargs.get("sitename", None)
