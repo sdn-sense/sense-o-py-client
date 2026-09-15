@@ -116,3 +116,29 @@ class TaskApi():
         del params['kwargs']
 
         return self.client.request('DELETE', f'/task/uuid/{kwargs["uuid"]}')
+
+    def dispatch_task(self, **kwargs):
+        kwargs['_return_http_data_only'] = True
+        if kwargs.get('async_req'):
+            return self.dispatch_task_with_http_info(**kwargs)  # noqa: E501
+        else:
+            (data) = self.dispatch_task_with_http_info(**kwargs)  # noqa: E501
+            return data
+
+    def dispatch_task_with_http_info(self, **kwargs):
+        all_params = ['async_req', '_return_http_data_only', '_preload_content', '_request_timeout', 'tag', 'requester']
+        params = locals()
+        for key, val in params['kwargs'].items():
+            if key not in all_params:
+                raise TypeError("Got an unexpected keyword argument '%s'"
+                                " to method dispatch_task" % key)
+            params[key] = val
+        del params['kwargs']
+
+        query_params = {}
+        if params.get('requester'):
+            query_params['requester'] = params['requester']
+
+        # 200: a pending task was claimed and marked ACCEPTED (JSON body).
+        # 204: no pending tasks for this tag (empty body, returned as "").
+        return self.client.request('GET', f'/task/dispatch/{kwargs["tag"]}', query_params=query_params)
