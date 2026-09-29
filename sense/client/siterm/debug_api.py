@@ -135,12 +135,16 @@ class DebugApi(BaseApi):
     def get_all_debug_hostname(self, **kwargs):
         """Get all debug info from SENSE-SiteRM Endpoint"""
         sitename = self.getSitename(**kwargs)
-            # build params dict instead of string
         params = {}
         for key in ["hostname", "state", "limit", "action"]:
             if key in kwargs and kwargs[key]:
                 params[key] = kwargs[key]
-        params["debugvar"] = "ALL"
+        # No debugvar. The frontend rejects the whole request with 422
+        # extra_forbidden if it is sent, and omitting hostname already returns
+        # every host, which is all it was asking for. get_debug below never
+        # sent it. While it was here this call could only ever fail, so callers
+        # that use it to find an already submitted action found nothing and
+        # submitted the same one again on every pass.
         params["details"] = True
         return self.client.makeRequest(sitename=sitename,
                                        url=f"/api/{sitename}/debug",
