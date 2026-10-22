@@ -1,10 +1,58 @@
-__pycache__
-.vscode
-.idea
-.pytest_cache
-venv/
-*.log
-.eggs
-*egg-info/
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytype/
+.pyre/
+
+# Packaging
 build/
 dist/
+.eggs
+*egg-info/
+*.whl
+
+# Virtual environments
+venv/
+.venv/
+
+# Test and coverage output
+.pytest_cache
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Local environment overrides (.env itself is tracked)
+.env.local
+*.local.env
+
+# Editors and IDEs
+.vscode
+.idea
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# AI coding assistants
+.claude/
+CLAUDE.local.md
+.cursor/
+.windsurf/
+.continue/
+.aider*
+.codex/
+.gemini/
+.cline/
+.roo/
+.copilot/
+.panopticon/
+
+# Logs
+*.log

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import json
+import sys
 from sense.client.apiclient import ApiClient
 from sense.client.address_api import AddressApi
 from sense.client.metadata_api import MetadataApi
@@ -9,14 +10,40 @@ from sense.client.workflow_combined_api import WorkflowCombinedApi
 from sense.client.profile_api import ProfileApi
 from sense.client.discover_api import DiscoverApi
 from sense.client.facility_space_api import FacilitySpaceApi
+from sense.client.group_api import GroupApi
+from sense.client.project_api import ProjectApi
+from sense.client.instance_selection import select_instance_scope
 from sense.common import bw2bps
 import argparse
+
 
 def output_handler(data, as_json=False, **kwargs):
     if as_json:
         print(json.dumps(data, default=str))
     else:
         print(data)
+
+
+def selection_text(value):
+    if not value.strip():
+        raise argparse.ArgumentTypeError('selection must not be empty')
+    return value
+
+
+def prepare_instance_intent(intent, args):
+    """Apply CLI selections before reserving a UUID and report omitted defaults."""
+    body = select_instance_scope(json.dumps(intent), principal=args.principal, project=args.project)
+    selected = json.loads(body)
+    if not args.use_defaults:
+        if not selected.get('principal'):
+            print("Warning: no principal selected, using the user's username. "
+                  "Query --profile-options for licenses. Set --principal "
+                  "or acknowledge with --use-defaults.", file=sys.stderr)
+        if not selected.get('project'):
+            print("Warning: no project selected, default project for the principal will be used and may leave "
+                  "the instance without a project. Set --project "
+                  "or acknowledge with --use-defaults.", file=sys.stderr)
+    return body
 
 
 if __name__ == "__main__":
@@ -76,6 +103,21 @@ if __name__ == "__main__":
                             help="Perform an action on a facility space job (requires --uuid --job-id --action)")
     operations.add_argument("--troubleshoot", action="store_true",
                             help="troubleshoot system or a service instance (requires --opt)")
+    operations.add_argument("--groups", action="store_true",
+                            help="list the caller's group memberships, including inherited groups")
+    operations.add_argument("--projects", action="store_true",
+                            help="list projects offered to the caller, or to the selected --principal")
+    operations.add_argument("--profile-options", action="store_true",
+                            help="query profile submission principals, license usage and projects (requires -u or -n)")
+    principal_options = parser.add_mutually_exclusive_group()
+    principal_options.add_argument("--principal", type=selection_text,
+                                   help="user or group license principal for creation or selection queries")
+    principal_options.add_argument("--group", dest="principal", type=selection_text,
+                                   help="alias for --principal, typically a group path")
+    parser.add_argument("--project", type=selection_text,
+                        help="project name or external ID for --create/--compute")
+    parser.add_argument("--use-defaults", action="store_true",
+                        help="acknowledge omitted principal/project selections for --create/--compute")
     parser.add_argument("--full", action="store_true",
                         help="retrieve the full representation of some data")
     parser.add_argument("-f", "--file", action="append",
@@ -111,7 +153,26 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.create:
+    if args.principal is not None and not (args.create or args.compute or args.projects or args.profile_options):
+        parser.error('--principal/--group requires --create, --compute, --projects, or --profile-options')
+    if args.project is not None and not (args.create or args.compute):
+        parser.error('--project requires --create or --compute')
+    if args.use_defaults and not (args.create or args.compute):
+        parser.error('--use-defaults requires --create or --compute')
+    if (args.create or args.compute) and not (args.file or args.uuid):
+        parser.error('--create/--compute requires --file or --uuid (profile UUID)')
+    if args.profile_options and bool(args.uuid) == bool(args.name):
+        parser.error('--profile-options requires either --uuid or --name')
+
+    if args.groups:
+        output_handler(GroupApi().group_list(), as_json=args.json)
+    elif args.projects:
+        output_handler(ProjectApi().project_available(subject=args.principal), as_json=args.json)
+    elif args.profile_options:
+        search = args.uuid[0] if args.uuid else args.name[0]
+        response = ProfileApi().profile_submission_options(search, principal=args.principal)
+        print(json.dumps(response, indent=None if args.json else 2))
+    elif args.create:
         if args.file:
             workflowApi = WorkflowCombinedApi()
             if not os.path.isfile(args.file[0]):
@@ -122,13 +183,14 @@ if __name__ == "__main__":
             if args.name:
                 intent['alias'] = args.name[0]
             intent_file.close()
+            body = prepare_instance_intent(intent, args)
             if args.uuid:
                 workflowApi.si_uuid = args.uuid[0]
-                response = workflowApi.instance_create(json.dumps(intent))
+                response = workflowApi.instance_create(body)
             else:
                 workflowApi.instance_new()
                 try:
-                    response = workflowApi.instance_create(json.dumps(intent))
+                    response = workflowApi.instance_create(body)
                 except ValueError:
                     print(f"Failed to instantiate service instance: {workflowApi.si_uuid}")
                     workflowApi.instance_delete()
@@ -142,10 +204,11 @@ if __name__ == "__main__":
             intent = {'service_profile_uuid': args.uuid[0]}
             if args.name:
                 intent['alias'] = args.name[0]
+            body = prepare_instance_intent(intent, args)
             workflowApi = WorkflowCombinedApi()
             workflowApi.instance_new()
             try:
-                response = workflowApi.instance_create(json.dumps(intent))
+                response = workflowApi.instance_create(body)
                 print(f"creating service instance: {response}")
             except ValueError:
                 print(f"Failed to instantiate service instance: {workflowApi.si_uuid}")
@@ -164,13 +227,14 @@ if __name__ == "__main__":
             if args.name:
                 intent['alias'] = args.name[0]
             intent_file.close()
+            body = prepare_instance_intent(intent, args)
             if args.uuid:
                 workflowApi.si_uuid = args.uuid[0]
-                response = workflowApi.instance_create(json.dumps(intent))
+                response = workflowApi.instance_create(body)
             else:
                 workflowApi.instance_new()
                 try:
-                    response = workflowApi.instance_create(json.dumps(intent))
+                    response = workflowApi.instance_create(body)
                 except ValueError:
                     print(f"Failed to instantiate service instance: {workflowApi.si_uuid}")
                     workflowApi.instance_delete()
@@ -183,10 +247,11 @@ if __name__ == "__main__":
             intent = {'service_profile_uuid': args.uuid[0]}
             if args.name:
                 intent['alias'] = args.name[0]
+            body = prepare_instance_intent(intent, args)
             workflowApi = WorkflowCombinedApi()
             workflowApi.instance_new()
             try:
-                response = workflowApi.instance_create(json.dumps(intent))
+                response = workflowApi.instance_create(body)
             except ValueError:
                 print(f"Filed to instantiate service instance: {workflowApi.si_uuid}")
                 workflowApi.instance_delete()
