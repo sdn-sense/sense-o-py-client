@@ -1,0 +1,14 @@
+# Same pylint gate as CI. One-time setup, inside the project virtualenv:
+#   pip install -r requirements-dev.txt && pre-commit install
+# Run on demand with: pre-commit run --all-files
+repos:
+  - repo: local
+    hooks:
+      - id: pylint
+        name: pylint
+        # Runs the virtualenv's pylint so project imports resolve as in CI.
+        entry: python -m pylint --rcfile=standarts/pylintrc
+        language: system
+        types: [ python ]
+        files: ^(sense|util)/
+        require_serial: true

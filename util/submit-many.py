@@ -96,7 +96,7 @@ class SENSEWorker():
         self.starttime = int(time.time())
         self._logTiming('CREATE', 'create', 'create', int(time.time()))
         intent = {'service_profile_uuid': self.args.uuid[0]}
-        if args.name:
+        if self.args.name:
             intent['alias'] = self.args.name[0]
         self.workflowApi.instance_new()
         try:

@@ -3,10 +3,12 @@
 import os
 import json
 import requests
+import urllib3
 from sense.common import classwrapper, getHTTPTimeout
 from sense.common import getConfig
 
-requests.packages.urllib3.disable_warnings()
+urllib3.disable_warnings()
+
 
 @classwrapper
 class ApiClient:
@@ -207,7 +209,8 @@ class ApiClient:
             if self.config.get('USERNAME') and self.config.get('PASSWORD'):
                 self._getToken()
                 return
-            raise Exception(f"Failed to refresh token and no USERNAME/PASSWORD configured: {self.token.get('error_description')}")
+            raise Exception(
+                f"Failed to refresh token and no USERNAME/PASSWORD configured: {self.token.get('error_description')}")
 
         # Keep tokens in config for runtime use
         self.config['ACCESS_TOKEN'] = self.token.get('access_token')

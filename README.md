@@ -64,3 +64,20 @@ sense_util.py --compute -u PROFILE_UUID --principal alice@example.org --use-defa
 
 These flags simply override the intent's `principal` and `project` fields. If either is omitted, the
 server defaults apply and the CLI prints a warning on stderr.
+
+### Development
+
+Install the development tools into your virtualenv and enable the pre-commit hook once:
+
+```sh
+pip install -r requirements-dev.txt
+pre-commit install
+```
+
+The hook runs the same pylint check as CI on changed files in `sense/` and `util/`; it fails on
+errors only, using `standarts/pylintrc`. To run the checks manually:
+
+```sh
+pre-commit run --all-files   # pylint
+python -m pytest test/unit   # unit tests
+```
