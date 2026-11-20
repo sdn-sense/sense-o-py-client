@@ -1,5 +1,7 @@
 ## SENSE Orchestrator Python Client
 
+SENSE documentation: [https://sdn-sense.dev](https://sdn-sense.dev/).
+
 ### Template for ~/.sense-o-auth.yaml (or /etc/sense-o-auth.yaml)
 
 ```
